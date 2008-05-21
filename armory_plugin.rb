@@ -12,7 +12,13 @@ class ArmoryPlugin < Plugin
       return
     end
     
+    res = []
     
+    result[0..4].each_with_index do |char, i|
+      res << "[#{i}] #{char.class}"
+    end
+    
+    m.reply res.join(", ")
   end
 end
 
