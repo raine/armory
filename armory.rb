@@ -72,6 +72,3 @@ class Armory
     end
   end
 end
-
-a = Armory.new(:us)
-pp a.search(:character, "Hafu")
