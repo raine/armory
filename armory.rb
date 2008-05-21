@@ -8,7 +8,7 @@ class Character
   def self.parse_hash(hash)
     char = self.new
     char.name        = hash["name"]
-    char.guild       = hash["guild"]
+    char.guild       = hash["guild"] unless hash["guild"].nil?
     char.class       = hash["class"].to_sym 
     char.level       = hash["level"].to_i
     char.race        = hash["race"].to_sym
