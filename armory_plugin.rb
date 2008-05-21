@@ -3,7 +3,8 @@ require '~/armory'
 class ArmoryPlugin < Plugin
   def search(m, params)
     m.reply "foo"
-    debug Armory.new(:us).search(:character, "Jakuten")
+    pp "asd"
+    debug "asdasdasd"
   end
 end
 
