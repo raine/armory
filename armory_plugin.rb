@@ -3,7 +3,7 @@ require '~/armory'
 class ArmoryPlugin < Plugin
   def search(m, params)
     m.reply "foo"
-    pp Armory.new(:us).search("Jakuten")
+    puts Armory.new(:us).search("Jakuten")
   end
 end
 
