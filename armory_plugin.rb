@@ -2,8 +2,12 @@ require '~/armory'
 
 class ArmoryPlugin < Plugin
   def search(m, params)
-    pp params
-    pp Armory.new(:eu).search(:character, params[:name])
+    pp params # debug
+    
+    result = Armory.new(:us).search(:character, params[:name])
+    pp result
+    
+    
   end
 end
 
