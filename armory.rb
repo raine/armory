@@ -9,9 +9,9 @@ class Character
     char = self.new
     char.name        = hash["name"]
     char.guild       = hash["guild"]
-    char.class       = hash["class"].downcase.to_sym 
+    char.class       = hash["class"].to_sym 
     char.level       = hash["level"].to_i
-    char.race        = hash["race"].downcase.to_sym
+    char.race        = hash["race"].to_sym
     char.realm       = hash["realm"]
     char.relevance   = hash["relevance"].to_i
     char.battlegroup = hash["battleGroup"]
