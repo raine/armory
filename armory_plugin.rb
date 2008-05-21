@@ -7,6 +7,11 @@ class ArmoryPlugin < Plugin
     result = Armory.new(:us).search(:character, params[:name])
     pp result
     
+    if result.empty?
+      m.reply "no results"
+      return
+    end
+    
     
   end
 end
