@@ -3,7 +3,7 @@ require '~/armory'
 class ArmoryPlugin < Plugin
   def search(m, params)
     pp "asd"
-    pp Armory.new(:us)
+    pp Armory.new(:us).search(:character, "Jakuten")
   end
 end
 
