@@ -1,4 +1,4 @@
-require 'armory'
+require '~/armory'
 
 class ArmoryPlugin < Plugin
   
