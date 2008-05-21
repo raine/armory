@@ -8,4 +8,4 @@ class ArmoryPlugin < Plugin
 end
 
 plugin = ArmoryPlugin.new
-plugin.map ":region *str", :action => 'search', :requirements => { :region => %r|eu|us| }
+plugin.map ":region *str", :action => 'search', :requirements => { :region => %r(eu|us) }
