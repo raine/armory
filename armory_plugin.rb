@@ -16,13 +16,13 @@ class ArmoryPlugin < Plugin
     
     result[0..4].each_with_index do |char, i|
       str = ""
-      str << "[#{i+1}] #{char.class.to_s.downcase}"
+      str << "[#{i+1}] #{char.race} #{char.class}"
       str << " <#{char.guild}>" unless char.guild.nil?
       
       res << str
     end
     
-    m.reply res.join(", ")
+    m.reply res.join(" ")
   end
 end
 
