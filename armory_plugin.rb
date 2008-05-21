@@ -7,4 +7,4 @@ class ArmoryPlugin < Plugin
 end
 
 plugin = ArmoryPlugin.new
-plugin.map "s :name [*str]", :action => 'search'
+plugin.map "s :name [*str]", :action => 'search', :requirements => {:name => %r{^[A-Za-z]+$}}
