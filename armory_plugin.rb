@@ -15,8 +15,11 @@ class ArmoryPlugin < Plugin
     res = []
     
     result[0..4].each_with_index do |char, i|
-      res << "[#{i+1}] #{char.class}"
-      res << " <#{char.guild}>" unless char.guild.nil?
+      str = ""
+      str << "[#{i+1}] #{char.class}"
+      str << " <#{char.guild}>" unless char.guild.nil?
+      
+      res << str
     end
     
     m.reply res.join(", ")
