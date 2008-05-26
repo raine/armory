@@ -26,9 +26,22 @@ class ArmoryPlugin < Plugin
     @cache = CharacterCache.new
   end
   
+  def help(plugin, topic="")
+    case topic
+    when 'commands'
+      "Commands: c(haracter), s(earch), last | 'help armory <command>' for more info on specific command"
+    when 'c'
+      "Usage: c [<region>] <character name> [<realm>] [<keywords>] | Keywords: 2|3|5vs2|3|5 | Examples: 'c us serennia cho'gall 2on2'"
+    when 's'
+      "Usage: s [<region>] <character name> [<keywords>] | Keywords can be attributes like 'tauren', 'gnome' or '<Guild>' | Examples: 's eu athene hunter blood elf', 's punisher orc warrior' | Upon getting search results you can get armory profiles of those character using '!<result id>'"
+    when 'last'
+      "Usage: last [<keywords>] | Keywords: 2|3|5vs2|3|5"
+    else
+      "Armory plugin -- 'help armory commands' for list of commands"
+    end
+  end
+  
   def character_action(m, params)
-    pp params
-    
     name = params[:name]
     
     if params[:region].nil? && !@bot.config['armory.region']

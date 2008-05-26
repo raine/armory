@@ -167,10 +167,6 @@ class Character
     
     sorted.first[:tree]
   end
-  
-  def armorylite
-    "http://armorylite.com/#{@region}/#{ERB::Util.url_encode(@realm.downcase)}/#{@name.downcase}"
-  end
 end
 
 class Armory
@@ -186,7 +182,7 @@ class Armory
     @region = region
     @armory_http = start_session(region)
   end
-  
+    
   def start_session(reg)
     Net::HTTP.new(REGIONS[reg])
   end
@@ -196,11 +192,13 @@ class Armory
     
     raise "armory fails" unless res.code_type == Net::HTTPOK
     
+    pp res.body
+    
     return res.body
   end
   
   def get_character(page, name, realm)
-    http_get("/character-#{page.to_s}.xml?r=#{realm}&n=#{name}")
+    http_get("/character-#{page.to_s}.xml?r=#{ERB::Util.url_encode(realm)}&n=#{name}")
   end
   
   def character(name, realm)
@@ -503,7 +501,7 @@ class Cache
 end
 
 class CharacterCache<Cache
-  def exist?(*info)
+  def exist?(*info)ata
     if find_character(*info)
       true
     else
