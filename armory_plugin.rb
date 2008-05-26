@@ -56,7 +56,7 @@ class ArmoryPlugin < Plugin
     if params[:realm].empty? && !@bot.config['armory.realm']
       m.reply "default realm not set, specify realm pls"
       return
-    elsif params[:realm]
+    elsif !params[:realm].empty?
       realm = params[:realm].to_s
     else
       realm = @bot.config['armory.realm']

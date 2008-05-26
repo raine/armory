@@ -192,12 +192,11 @@ class Armory
     
     raise "armory fails" unless res.code_type == Net::HTTPOK
     
-    pp res.body
-    
     return res.body
   end
   
   def get_character(page, name, realm)
+    pp "/character-#{page.to_s}.xml?r=#{ERB::Util.url_encode(realm)}&n=#{name}"
     http_get("/character-#{page.to_s}.xml?r=#{ERB::Util.url_encode(realm)}&n=#{name}")
   end
   
