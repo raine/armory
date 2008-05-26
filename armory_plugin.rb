@@ -35,7 +35,7 @@ class ArmoryPlugin < Plugin
     when 's'
       "Usage: s [<region>] <character name> [<keywords>] | Keywords can be attributes like 'tauren', 'gnome' or '<Guild>' | Examples: 's eu athene hunter blood elf', 's punisher orc warrior' | Upon getting search results you can get armory profiles of those character using '!<result id>'"
     when 'last'
-      "Usage: last [<keywords>] | Keywords: 2|3|5vs2|3|5"
+      "Usage: last [<keywords>] | Keywords: 2|3|5vs2|3|5 | Used to access latest armory profile that has been fetched from armory"
     else
       "Armory plugin -- 'help armory commands' for list of commands"
     end

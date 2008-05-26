@@ -45,10 +45,10 @@ module Utilities
     teams = Hash.new
     
     [2, 3, 5].each do |s|
-      points = coeff(s)*points
+      points_coeff = coeff(s)*points
       
-      if points > 0
-        teams[s] = points.round
+      if points_coeff > 0
+        teams[s] = points_coeff.round
       else
         teams[s] = 0
       end
@@ -237,6 +237,8 @@ class Armory
                        :suffix => char_hash["suffix"]}
         
         tab_xml = (xml/:characterInfo/:characterTab)
+        
+        raise "character data unavailable" if tab_xml.empty?
         
         # talents
         talents = (tab_xml/:talentSpec).first.attributes
