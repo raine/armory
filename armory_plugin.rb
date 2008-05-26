@@ -182,6 +182,8 @@ class ArmoryPlugin < Plugin
     result[0..4].each_with_index do |char, i|
 
       str  = "[#{Bold}!#{i+1}#{Bold}|#{char.relevance}%] #{char.level} #{char.race} #{char.char_class.to_s.capitalize}"
+      
+      pp char.guild
       str << " <#{char.guild}>" unless char.guild.nil? or char.guild.empty?
       str << " (#{char.realm})"
       
