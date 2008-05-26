@@ -99,9 +99,9 @@ class Character
     char = self.new
     char.name = hash["name"]
     
-    if hash["guild"] && hash["guild"].empty?
+    if hash["guild"] && !hash["guild"].empty?
       char.guild = hash["guild"]
-    elsif hash["guildName"] && hash["guildName"].empty? 
+    elsif hash["guildName"] && !hash["guildName"].empty? 
       char.guild = hash["guildName"]
     end
     

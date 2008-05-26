@@ -94,7 +94,6 @@ class ArmoryPlugin < Plugin
     
     
     if params and !params[:keywords].empty?
-      pp params
       keyword = parse_keywords(params[:keywords].to_s)
 
       case keyword
@@ -125,8 +124,6 @@ class ArmoryPlugin < Plugin
   
   def last(m, params)
     source = m.replyto.to_s
-    
-    pp params
     
     return unless @temp[source][:last]
     
@@ -183,7 +180,6 @@ class ArmoryPlugin < Plugin
 
       str  = "[#{Bold}!#{i+1}#{Bold}|#{char.relevance}%] #{char.level} #{char.race} #{char.char_class.to_s.capitalize}"
       
-      pp char.guild
       str << " <#{char.guild}>" unless char.guild.nil? or char.guild.empty?
       str << " (#{char.realm})"
       
