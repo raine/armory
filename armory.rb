@@ -97,8 +97,14 @@ class Character
   
   def self.parse_hash(hash)
     char = self.new
-    char.name        = hash["name"]
-    char.guild       = hash["guild"] unless hash["guild"].empty?
+    char.name = hash["name"]
+    
+    if hash["guild"] && hash["guild"].empty?
+      char.guild = hash["guild"]
+    elsif hash["guildName"] && hash["guildName"].empty? 
+      char.guild = hash["guildName"]
+    end
+    
     char.char_class  = hash["class"].downcase.to_sym 
     char.level       = hash["level"].to_i if hash["level"]
     char.race        = hash["race"].to_sym
@@ -502,7 +508,7 @@ class Cache
 end
 
 class CharacterCache<Cache
-  def exist?(*info)ata
+  def exist?(*info)
     if find_character(*info)
       true
     else
