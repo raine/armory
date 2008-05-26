@@ -383,7 +383,9 @@ class ArmoryPlugin < Plugin
         # special gear
         
         unless char.gear.values.map { |e| e.values }.flatten.max.zero?
-          str << " |"
+          str << " | "
+          
+          gear = []
           
           prefixes = {:pve => "T", :arena => "S"}
           pieces   = {:pve   => {4=>5,5=>5,6=>8},
@@ -392,7 +394,7 @@ class ArmoryPlugin < Plugin
           char.gear.keys.each do |type|
             char.gear[type].each do |tier, amount|
               
-              str << _(" %{prefix}%{tier}: %{amount}/%{max}") % {
+              gear << _("%{prefix}%{tier}: %{amount}/%{max}") % {
                 :prefix => prefixes[type],
                 :tier   => tier,
                 :amount => amount,
@@ -401,6 +403,8 @@ class ArmoryPlugin < Plugin
             end
           end
           
+          
+          str << gear.join(", ")
         end
         
         # PVP
