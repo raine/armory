@@ -1,3 +1,9 @@
+# TO DO
+# - [16:32:05] <        rane> | ,s Tun tauren druid
+#   [16:32:07] <     jakubot> | <2> [!1|100%] 70 Tauren Druid (Magtheridon), [!2|100%] 70 Tauren Druid <> (Marécage de Zangar) 
+# 
+# - S3: 5/5 etc.
+
 require '~/armory'
 
 class ::String
