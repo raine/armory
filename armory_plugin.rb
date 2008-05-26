@@ -1,8 +1,7 @@
 # TO DO
-# - [16:32:05] <        rane> | ,s Tun tauren druid
-#   [16:32:07] <     jakubot> | <2> [!1|100%] 70 Tauren Druid (Magtheridon), [!2|100%] 70 Tauren Druid <> (Marécage de Zangar) 
 # 
 # - S3: 5/5 etc.
+# - RCrit: 15.34% RHit: 0 (+0.0%) | 
 
 require '~/armory'
 
@@ -39,7 +38,7 @@ class ArmoryPlugin < Plugin
     when 'c'
       "Usage: c [<region>] <character name> [<realm>] [<keywords>] | Keywords: 2|3|5vs2|3|5 | Examples: 'c us serennia cho'gall 2on2'"
     when 's'
-      "Usage: s [<region>] <character name> [<keywords>] | Keywords can be attributes like 'tauren', 'gnome' or '<Guild>' | Examples: 's eu athene hunter blood elf', 's punisher orc warrior' | Upon getting search results you can get armory profiles of those character using '!<result id>'"
+      "Usage: s [<region>] <character name> [<keywords>] | Keywords can be attributes like 'tauren', 'gnome' or '<Guild>' | Examples: 's eu athene hunter blood elf', 's punisher orc warrior' | Upon getting search results you can get armory profiles of those characters using '!<result id>'"
     when 'last'
       "Usage: last [<keywords>] | Keywords: 2|3|5vs2|3|5 | Used to access latest armory profile that has been fetched from armory"
     else
@@ -379,6 +378,29 @@ class ArmoryPlugin < Plugin
             :hit     => char.melee[:hit_rating][:value],
             :percent => char.melee[:hit_rating][:inc_percent],
           } if char.melee[:hit_rating][:value] > 0
+        end
+        
+        # special gear
+        
+        unless char.gear.values.map { |e| e.values }.flatten.max.zero?
+          str << " |"
+          
+          prefixes = {:pve => "T", :arena => "S"}
+          pieces   = {:pve   => {4=>5,5=>5,6=>8},
+                      :arena => {1=>5,2=>5,3=>5}}
+          
+          char.gear.keys.each do |type|
+            char.gear[type].each do |tier, amount|
+              
+              str << _(" %{prefix}%{tier}: %{amount}/%{max}") % {
+                :prefix => prefixes[type],
+                :tier   => tier,
+                :amount => amount,
+                :max    => pieces[type][tier]
+              } unless amount.zero?
+            end
+          end
+          
         end
         
         # PVP
