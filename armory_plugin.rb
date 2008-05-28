@@ -1,7 +1,8 @@
-# TO DO
+# TO DO:
 # 
-# - S3: 5/5 etc.
-# - RCrit: 15.34% RHit: 0 (+0.0%) | 
+# - talent keyword
+# - url in the end
+# - professions
 
 require '~/armory'
 
@@ -42,7 +43,7 @@ class ArmoryPlugin < Plugin
     when 'last'
       "Usage: last [<keywords>] | Keywords: 2|3|5vs2|3|5 | Used to access latest armory profile that has been fetched from armory"
     else
-      "Armory plugin -- 'help armory commands' for list of commands"
+      "Armory plugin -- Commands: c(haracter), s(earch), last | 'help armory <command>' for more info on specific command"
     end
   end
   
@@ -155,7 +156,7 @@ class ArmoryPlugin < Plugin
       end
       
       if keywords[:class]
-        result.delete_if { |c| c.char_class.to_s.downcase != keywords[:class].downcase }
+        result.delete_if { |c| c.class.to_s.downcase != keywords[:class].downcase }
       end
       
       if keywords[:guild]
@@ -176,11 +177,23 @@ class ArmoryPlugin < Plugin
     
     res = []
     result[0..4].each_with_index do |char, i|
-
-      str  = "[#{Bold}!#{i+1}#{Bold}|#{char.relevance}%] #{char.level} #{char.race} #{char.char_class.to_s.capitalize}"
-      
-      str << " <#{char.guild}>" unless char.guild.nil? or char.guild.empty?
-      str << " (#{char.realm})"
+      str = String.new
+      str << _("[%{b}!%{id}%{b}|%{relevance}%]") % {
+        :b  => Bold,
+        :id => i+1,
+        :relevance => char.relevance
+      }
+      str << _(" %{level} %{race} %{class}") % {
+        :level => char.level,
+        :race  => char.race,
+        :class => char.class.to_s
+      }
+      str << _(" <%{guild}>") % {
+        :guild => char.guild
+      } unless char.guild.nil? or char.guild.empty?
+      str << _(" (%{realm})") % {
+        :realm => char.realm
+      }
       
       res << str
     end
@@ -259,7 +272,7 @@ class ArmoryPlugin < Plugin
             member_str << _("[%{b}%%{id}%{b}] ") % { :id => i+1, :b => Bold }
             member_str << _("%{race} %{class} %{name}") % {
               :race  => m.race,
-              :class => m.char_class.to_s.capitalize,
+              :class => m.class.to_s,
               :name  => m.name
             }
             
@@ -286,7 +299,7 @@ class ArmoryPlugin < Plugin
         str << _(", %{level} %{race} %{class}") % {
           :level => char.level,
           :race  => char.race.to_s.cew,
-          :class => char.char_class.to_s.capitalize
+          :class => char.class.to_s
         }
         
         str << _(" (%{talents}, %{spec})") % {
@@ -322,11 +335,11 @@ class ArmoryPlugin < Plugin
               :mp5 => char.spell[:mp5]
             }            
           elsif char.caster?
-            if char.spell_schools.values.uniq.size > 1
+            if char.spell[:damage].values.uniq.size > 1
               # spell schools relevant to the class have different damage bonuses
               # so they are shown individually
           
-              char.spell_schools.each do |s,d|
+              char.spell[:damage].each do |s,d|
                 str << _(" +%{school}: %{damage}") % {
                   :school => s.to_s.capitalize,
                   :damage => d
@@ -334,7 +347,7 @@ class ArmoryPlugin < Plugin
               end
             else
               str << _(" +Spell Damage: %{damage}") % {
-                :damage => char.spell_schools.values.first
+                :damage => char.spell[:damage].values.first
               }
             end
           
@@ -352,9 +365,8 @@ class ArmoryPlugin < Plugin
           str << _(" Crit: %{crit}%") % {
             :crit => char.spell[:crit][:schools].values.first
           }
-          
         # hunter's ranged stuff
-        elsif char.char_class == :hunter
+        elsif char.class == Hunter
           str << _(" RAP: %{rap}") % {
             :rap => char.ranged[:attack_power][:effective]
           }
@@ -365,7 +377,29 @@ class ArmoryPlugin < Plugin
           str << _(" RHit: %{hit} (+%{percent}%)") % {
             :hit     => char.ranged[:hit_rating][:value],
             :percent => char.ranged[:hit_rating][:inc_percent],
+          } if char.ranged[:hit_rating][:value] > 0
+          
+        # tanks
+        elsif char.tank?
+          str << _(" Defense: %{defense}") % {
+            :defense => (char.defenses[:defense][:value]+char.defenses[:defense][:plus_def]).to_i
+          }          
+          str << _(" Dodge: %{percent}%") % {
+            :percent => char.defenses[:dodge][:percent]
           }
+          
+          if char.class == Warrior or char.class == Paladin
+            str << _(" Armor: %{armor} (-%{percent}%)") % {
+              :armor   => char.defenses[:armor][:effective],
+              :percent => char.defenses[:armor][:percent]
+            }
+            str << _(" Block: %{percent}%") % {
+              :percent => char.defenses[:block][:percent]
+            }
+            str << _(" Parry: %{percent}%") % {
+              :percent => char.defenses[:parry][:percent]
+            }
+          end
         else
           str << _(" AP: %{ap}") % {
             :ap => char.melee[:attack_power][:effective]
@@ -447,11 +481,11 @@ end
 plugin = ArmoryPlugin.new
 plugin.map "s [:region] :name [*keywords]",
   :action => 'search',
-  :requirements => {:name => %r{^[A-Za-z]+$}, 
+  :requirements => {:name => %r{^[^-\d\s]+$}u, 
                     :region => %r{eu|us}}
 plugin.map "c [:region] :name [*realm] [*keywords]",
   :action => 'character_action',
-  :requirements => {:name => %r{^[A-Za-z]+$},
+  :requirements => {:name => %r{^[^-\d\s]+$}u,
                     :region => %r{eu|us},
                     :realm => %r{['A-Za-z\-\s]+}}
 

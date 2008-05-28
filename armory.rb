@@ -153,7 +153,7 @@ module Utilities
 end
 
 class Character
-  attr_accessor :name, :guild, :char_class,
+  attr_accessor :name, :guild, :gear,
                 :level, :race, :realm,
                 :relevance, :battlegroup, :region,
                 :search_rank, :title, :gender,
@@ -161,8 +161,7 @@ class Character
                 :stats, :spell, :resistances,
                 :melee, :ranged, :defenses,
                 :arena_teams, :arena_games_total, :arena_games_won,
-                :arena_games_lost, :fetched_at, :items,
-                :gear
+                :arena_games_lost, :fetched_at, :items
                 
   def initialize
     @professions = Array.new
@@ -173,6 +172,10 @@ class Character
     @ranged      = Hash.new
     @resistances = Hash.new
     @defenses    = Hash.new
+  end
+  
+  def to_sym
+    self.class.to_s.downcase.to_sym
   end
   
   def check_gear
@@ -192,6 +195,22 @@ class Character
     end
   end
   
+  def tank?
+    false
+  end
+  
+  def healer?
+    false
+  end
+  
+  def caster?
+    false
+  end
+  
+  def schools
+    []
+  end
+  
   def self.parse_hash(hash)
     char = self.new
     char.name = hash["name"]
@@ -202,7 +221,6 @@ class Character
       char.guild = hash["guildName"]
     end
     
-    char.char_class  = hash["class"].downcase.to_sym 
     char.level       = hash["level"].to_i if hash["level"]
     char.race        = hash["race"].to_sym
     char.realm       = hash["realm"] if hash["realm"]
@@ -219,58 +237,101 @@ class Character
     return char
   end
   
-  def caster?
-    case self.char_class
-    when :mage
-      true
-    when :warlock
-      true
-    when :priest
-      true
-    when :shaman
-      true if self.spec == :elemental or self.spec == :restoration
-    when :paladin
-      true if self.spec == :holy
-    when :druid
-      true if self.spec == :balance or self.spec == :restoration
-    else
-      false
-    end
-  end
-  
-  def healer?
-    case self.char_class
-    when :druid
-      true if self.spec == :restoration
-    when :priest
-      true if self.spec == :discipline or self.spec == :holy
-    when :shaman
-      true if self.spec == :restoration
-    when :paladin
-      true if self.spec == :holy
-    else
-      false
-    end
-  end
-  
-  def spell_schools
-    schools = {
-      :warlock => [:fire, :shadow],
-      :priest  => [:holy, :shadow],
-      :shaman  => [:elemental, :nature],
-      :mage    => [:frost, :arcane, :fire],
-      :druid   => [:nature, :arcane]
-    }
-    
-    return self.spell[:damage].delete_if { |k,v| !schools[self.char_class].include?(k) }
-  end
-  
   def spec
     sorted = self.talents.sort_by {|tree| tree[:points]}.reverse
     
     sorted.first[:tree]
   end
 end
+
+class Druid<Character
+  def schools
+    [:nature, :arcane]
+  end
+  
+  def caster?
+    spec  == :balance or spec == :restoration
+  end
+  
+  def healer?
+    spec == :restoration
+  end
+  
+  def tank?
+    spec == :feral
+  end
+end
+
+class Hunter<Character
+end
+
+class Mage<Character
+  def schools
+    [:frost, :arcane, :fire]
+  end
+  
+  def caster?
+    true
+  end
+end
+
+class Paladin<Character
+  def healer?
+    spec == :holy
+  end
+  
+  def tank?
+    spec == :protection
+  end
+end
+
+class Priest<Character
+  def schools
+    [:holy, :shadow]
+  end
+  
+  def caster?
+    true
+  end
+  
+  def healer?
+    spec == :holy or spec == :discipline
+  end
+end
+
+class Rogue<Character
+end
+
+class Shaman<Character
+  def schools
+    [:elemental, :nature]
+  end
+  
+  def caster?
+    spec == :elemental or spec == :restoration
+  end
+  
+  def healer?
+    spec == :restoration
+  end
+end
+
+class Warlock<Character
+  def schools
+    [:fire, :shadow]
+  end
+  
+  def caster?
+    true
+  end
+end
+
+class Warrior<Character
+  def tank?
+    true if spec == :protection
+  end
+end
+
 
 class Armory
   HEADERS = {'User-Agent' => "Mozilla/5.0 (Windows; U; Windows NT 5.1; fi; rv:1.8.1.8) Gecko/20071008 Firefox/2.0.0.8\r\n"}
@@ -299,20 +360,14 @@ class Armory
   end
   
   def get_character(page, name, realm)
-    pp "/character-#{page.to_s}.xml?r=#{ERB::Util.url_encode(realm)}&n=#{name}"
     http_get("/character-#{page.to_s}.xml?r=#{ERB::Util.url_encode(realm)}&n=#{name}")
   end
   
-  def character(name, realm)
-    @char = Character.new
-    @char.region = @region
-    @char.fetched_at = Time.now
-    
+  def character(name, realm)    
     sheet_xml = get_character(:sheet, name, realm)
+    char = parse_character(:sheet, sheet_xml)
     
-    parse_character(:sheet, sheet_xml)
-    
-    return @char
+    return char
   end
   
   def parse_character(page, xml)
@@ -326,17 +381,23 @@ class Armory
         
         char_hash = (xml/:characterInfo/:character).first.attributes
         
-        @char.name        = char_hash["name"]
-        @char.char_class  = char_hash["class"].downcase.to_sym
-        @char.race        = char_hash["race"].downcase.to_sym
-        @char.guild       = char_hash["guildName"]
-        @char.level       = char_hash["level"].to_i
-        @char.gender      = char_hash["gender"].downcase.to_sym
-        @char.realm       = char_hash["realm"]
-        @char.battlegroup = char_hash["battleGroup"]
+        char_class = char_hash["class"].downcase.to_sym
         
-        @char.title = {:prefix => char_hash["prefix"],
-                       :suffix => char_hash["suffix"]}
+        char = Object.const_get(char_class.to_s.capitalize).new
+        
+        char.region = @region
+        char.fetched_at = Time.now
+        
+        char.name        = char_hash["name"]
+        char.race        = char_hash["race"].downcase.to_sym
+        char.guild       = char_hash["guildName"]
+        char.level       = char_hash["level"].to_i
+        char.gender      = char_hash["gender"].downcase.to_sym
+        char.realm       = char_hash["realm"]
+        char.battlegroup = char_hash["battleGroup"]
+        
+        char.title = {:prefix => char_hash["prefix"],
+                      :suffix => char_hash["suffix"]}
         
         tab_xml = (xml/:characterInfo/:characterTab)
         
@@ -346,48 +407,48 @@ class Armory
         talents = (tab_xml/:talentSpec).first.attributes
         talents = [talents["treeOne"], talents["treeTwo"], talents["treeThree"]]
         
-        trees = TALENT_TREES[@char.char_class]
+        trees = TALENT_TREES[char.to_sym]
         trees.each_with_index do |tree,i|
-          @char.talents << {:tree => tree, :points => talents[i].to_i}
+          char.talents << {:tree => tree, :points => talents[i].to_i}
         end
         
         # pvp stats
         pvp = (tab_xml/:pvp)
         
-        @char.pvp = {:lifetime_kills => (pvp/:lifetimehonorablekills).first.attributes["value"].to_i,
+        char.pvp = {:lifetime_kills => (pvp/:lifetimehonorablekills).first.attributes["value"].to_i,
                       :arena_points   => (pvp/:arenacurrency).first.attributes["value"].to_i}
 
         # professions
         prof = (tab_xml/:professions/:skill)
         prof.each do |p|
-          @char.professions << {:name => p["key"].to_sym, :value => p["value"].to_i, :max => p["max"].to_i}
+          char.professions << {:name => p["key"].to_sym, :value => p["value"].to_i, :max => p["max"].to_i}
         end
         
         # stats
         bars = (tab_xml/:characterBars)
-        @char.stats = {:health => (bars/:health).first.attributes["effective"].to_i}
+        char.stats = {:health => (bars/:health).first.attributes["effective"].to_i}
         
         # if power's type is mana, add mana and mana regen as stats
         if (bars/:secondBar).first.attributes["type"] == "m"
           power = (bars/:secondBar).first.attributes
-          @char.stats[:mana] = power["effective"].to_i
+          char.stats[:mana] = power["effective"].to_i
            
-          @char.spell[:mp5]    = power["casting"].to_i
-          @char.spell[:mp5_nc] = power["notCasting"].to_i
+          char.spell[:mp5]    = power["casting"].to_i
+          char.spell[:mp5_nc] = power["notCasting"].to_i
         end
         
         basestats = (tab_xml/:baseStats)
         
         %w(strength agility stamina intellect spirit).each do |s|
           stat = (basestats/s.to_sym).first.attributes
-          @char.stats[s.to_sym] = {:base => stat["base"].to_i, :effective => stat["effective"].to_i}
+          char.stats[s.to_sym] = {:base => stat["base"].to_i, :effective => stat["effective"].to_i}
         end
       
         resistances = (tab_xml/:resistances)
         
         SPELL_SCHOOLS.each do |s|
           resist = (resistances/s.to_sym).first.attributes
-          @char.resistances[s.to_sym] = resist["value"].to_i
+          char.resistances[s.to_sym] = resist["value"].to_i
         end
         
         # melee stuff
@@ -399,14 +460,14 @@ class Armory
           melee[e] = (melee_xml/e.to_sym).first.attributes
         end
         
-        @char.melee[:attack_power] = {:base => melee["power"]["base"].to_i,
-                                      :effective => melee["power"]["effective"].to_i}
-        @char.melee[:crit]         = {:rating => melee["critChance"]["rating"].to_i,
-                                      :percent => melee["critChance"]["percent"].to_f}
-        @char.melee[:hit_rating]   = {:value => melee["hitRating"]["value"].to_i,
-                                      :inc_percent => melee["hitRating"]["increasedHitPercent"].to_f}
-        @char.melee[:expertise]    = {:value => melee["expertise"]["value"].to_i,
-                                      :rating => melee["expertise"]["rating"].to_i}
+        char.melee[:attack_power] = {:base => melee["power"]["base"].to_i,
+                                     :effective => melee["power"]["effective"].to_i}
+        char.melee[:crit]         = {:rating => melee["critChance"]["rating"].to_i,
+                                     :percent => melee["critChance"]["percent"].to_f}
+        char.melee[:hit_rating]   = {:value => melee["hitRating"]["value"].to_i,
+                                     :inc_percent => melee["hitRating"]["increasedHitPercent"].to_f}
+        char.melee[:expertise]    = {:value => melee["expertise"]["value"].to_i,
+                                     :rating => melee["expertise"]["rating"].to_i}
         
         # ranged stuff
         ranged_xml = (tab_xml/:ranged)
@@ -416,11 +477,11 @@ class Armory
           ranged[e] = (ranged_xml/e.to_sym).first.attributes
         end
         
-        @char.ranged[:attack_power] = {:base => ranged["power"]["base"].to_i,
+        char.ranged[:attack_power] = {:base => ranged["power"]["base"].to_i,
                                       :effective => ranged["power"]["effective"].to_i}
-        @char.ranged[:crit]         = {:rating => ranged["critChance"]["rating"].to_i,
+        char.ranged[:crit]         = {:rating => ranged["critChance"]["rating"].to_i,
                                       :percent => ranged["critChance"]["percent"].to_f}
-        @char.ranged[:hit_rating]   = {:value => ranged["hitRating"]["value"].to_i,
+        char.ranged[:hit_rating]   = {:value => ranged["hitRating"]["value"].to_i,
                                       :inc_percent => ranged["hitRating"]["increasedHitPercent"].to_f}
         
         # spell stuff
@@ -429,29 +490,28 @@ class Armory
         spell_damage_xml = (spell_xml/:bonusDamage)
         spell_damage     = Hash.new
         
-        SPELL_SCHOOLS.each do |e|
+        char.schools.each do |e|
           spell_damage[e.to_sym] = (spell_damage_xml/e.to_sym).first.attributes["value"].to_i
         end
         
-        @char.spell[:damage] = spell_damage
+        char.spell[:damage] = spell_damage
 
         healing = (spell_xml/:bonusHealing).first.attributes
-        @char.spell[:healing] = healing["value"].to_i
-        
+        char.spell[:healing] = healing["value"].to_i
         
         hit_rating = (spell_xml/:hitRating).first.attributes
-        @char.spell[:hit_rating] = {:value => hit_rating["value"].to_i,
-                                    :inc_percent => hit_rating["increasedHitPercent"].to_f}
+        char.spell[:hit_rating] = {:value => hit_rating["value"].to_i,
+                                   :inc_percent => hit_rating["increasedHitPercent"].to_f}
         
         spell_crit_xml = (spell_xml/:critChance)
-        @char.spell[:crit] = {:rating => spell_crit_xml.first.attributes["rating"].to_i, :schools => Hash.new}
+        char.spell[:crit] = {:rating => spell_crit_xml.first.attributes["rating"].to_i, :schools => Hash.new}
         
-        SPELL_SCHOOLS.each do |e|
-          @char.spell[:crit][:schools][e.to_sym] = (spell_crit_xml/e.to_sym).first.attributes["percent"].to_f
+        char.schools.each do |e|
+          char.spell[:crit][:schools][e.to_sym] = (spell_crit_xml/e.to_sym).first.attributes["percent"].to_f
         end
         
         penetration = (spell_xml/:penetration).first.attributes
-        @char.spell[:penetration] = penetration["value"].to_i
+        char.spell[:penetration] = penetration["value"].to_i
         
         # defense stuff
         defenses_xml = (tab_xml/:defenses)
@@ -461,24 +521,24 @@ class Armory
           defenses[e] = (defenses_xml/e.to_sym).first.attributes
         end
         
-        @char.defenses[:armor] = {:base      => defenses["armor"]["base"].to_i,
-                                  :effective => defenses["armor"]["effective"].to_i,
-                                  :percent   => defenses["armor"]["percent"].to_f}
+        char.defenses[:armor] = {:base      => defenses["armor"]["base"].to_i,
+                                 :effective => defenses["armor"]["effective"].to_i,
+                                 :percent   => defenses["armor"]["percent"].to_f}
                                   
-        @char.defenses[:defense] = {:value       => defenses["defense"]["value"].to_f,
-                                    :plus_def    => defenses["defense"]["plusDefense"].to_i,
-                                    :rating      => defenses["defense"]["rating"].to_i,
-                                    :inc_percent => defenses["defense"]["incPercent"].to_f,
-                                    :dec_percent => defenses["defense"]["decPercent"].to_f}
+        char.defenses[:defense] = {:value       => defenses["defense"]["value"].to_f,
+                                   :plus_def    => defenses["defense"]["plusDefense"].to_i,
+                                   :rating      => defenses["defense"]["rating"].to_i,
+                                   :inc_percent => defenses["defense"]["increasePercent"].to_f,
+                                   :dec_percent => defenses["defense"]["decreasePercent"].to_f}
         
-        @char.defenses[:resilience] = {:value       => defenses["resilience"]["value"].to_i,
-                                       :hit_percent => defenses["resilience"]["hitPercent"].to_f,
-                                       :dmg_percent => defenses["resilience"]["damagePercent"].to_f}
+        char.defenses[:resilience] = {:value       => defenses["resilience"]["value"].to_i,
+                                      :hit_percent => defenses["resilience"]["hitPercent"].to_f,
+                                      :dmg_percent => defenses["resilience"]["damagePercent"].to_f}
         
         %w(dodge parry block).each do |e|
           stat = (defenses_xml/e.to_sym).first.attributes
-          @char.defenses[e.to_sym] = {:rating  => stat["rating"].to_i,
-                                      :percent => stat["percent"].to_f}
+          char.defenses[e.to_sym] = {:rating  => stat["rating"].to_i,
+                                     :percent => stat["percent"].to_f}
         end
         
         # arena teams
@@ -489,29 +549,31 @@ class Armory
         
           members_xml = (team/:members/:character)
           members_xml.each do |member|
-            char = Character::parse_hash(member.attributes)
-            char.realm  = @char.realm
-            char.region = @region
+            member_char = char.class::parse_hash(member.attributes)
+            member_char.realm  = char.realm
+            member_char.region = char.region
             
-            team_obj.members << char
+            team_obj.members << member_char
           end
           
-          @char.arena_teams[team_obj.type] = team_obj
+          char.arena_teams[team_obj.type] = team_obj
         end
         
         # items
         
         items_xml = (tab_xml/:items/:item)
         
-        @char.items = Array.new
+        char.items = Array.new
         
         items_xml.each do |i|
           item = i.attributes
           
-          @char.items << Item.new(item["id"], item["slot"])
+          char.items << Item.new(item["id"], item["slot"])
         end
         
-        @char.check_gear
+        char.check_gear
+        
+        return char
     end
   end
       
@@ -539,7 +601,7 @@ class Armory
         characters_xml = (xml/:armorySearch/:searchResults/:characters/:character)
         
         characters_xml.each do |e|
-          characters << Character::parse_hash(e.attributes)
+          characters << Object.const_get(e.attributes["class"])::parse_hash(e.attributes)
         end
         
         characters.map { |c| c.region = @region }
