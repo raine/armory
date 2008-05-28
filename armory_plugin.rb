@@ -1,6 +1,5 @@
 # TO DO:
 # 
-# - talent keyword
 # - url in the end
 # - professions
 
@@ -106,6 +105,8 @@ class ArmoryPlugin < Plugin
         else
           m.reply "character doesn't have a team in that bracket"
         end
+      when :"talents"
+        m.reply output(char, :talents)
       end
     else
       m.reply output(char)
@@ -116,9 +117,12 @@ class ArmoryPlugin < Plugin
     keywords.gsub!(/:/,"")
     
     case keywords  
-    when /(2(?:on|v|vs)2|3(?:on|v|vs)3|5(?:on|v|vs)5)/
-    # 2[on|vs/v]2 etc.
+    when /(2(?:on|v|vs)2|3(?:on|v|vs)3|5(?:on|v|vs)5)/i
+      # 2[on|vs/v]2 etc.
       return $1.gsub(/(\d).*?\d/) { |match| $1+'vs'+$1 }.to_sym
+    when /talents/i
+      # talents
+      return :talents
     end
   end
   
@@ -232,7 +236,7 @@ class ArmoryPlugin < Plugin
     end
   end
   
-  def output(obj)
+  def output(obj, what=nil)
     str = String.new
     
     case obj
@@ -289,186 +293,195 @@ class ArmoryPlugin < Plugin
       when Character
         char = obj
         
-        talent_str = char.talents.map{ |t| t[:points]}.join("/")
-        
-        # form the reply string
-
-        str << char.title[:prefix]+char.name+char.title[:suffix]
-        str << ' <'+char.guild+'>' unless char.guild.nil? || char.guild.empty?
-        
-        str << _(", %{level} %{race} %{class}") % {
-          :level => char.level,
-          :race  => char.race.to_s.cew,
-          :class => char.class.to_s
-        }
-        
-        str << _(" (%{talents}, %{spec})") % {
-          :talents => talent_str,
-          :spec => char.spec.to_s.cew
-        }
-
-        # hp and mana
-        str << _(" | H: %{health}") % {
-          :health => colorize(char.stats[:health], :red)
-        }
-        
-        str << _(" M: %{mana}") % {
-          :mana => colorize(char.stats[:mana], :blue)
-        } if char.stats[:mana]
-        
-        str << _(" Resilience: %{resi} (-%{hit}%)") % {
-          :resi => colorize(char.defenses[:resilience][:value], :yellow),
-          :hit => char.defenses[:resilience][:hit_percent]
-        } if char.defenses[:resilience][:value] > 0
-        
-        str << " |"
-        
-        # class and spec specific attributes
-        
-        if char.caster?
-          if char.healer?
-            str << _(" +Healing: %{healing}") % {
-              :healing => char.spell[:healing]
-            }
-            
-            str << _(" +mp5: %{mp5}") % {
-              :mp5 => char.spell[:mp5]
-            }            
-          elsif char.caster?
-            if char.spell[:damage].values.uniq.size > 1
-              # spell schools relevant to the class have different damage bonuses
-              # so they are shown individually
-          
-              char.spell[:damage].each do |s,d|
-                str << _(" +%{school}: %{damage}") % {
-                  :school => s.to_s.capitalize,
-                  :damage => d
-                }
-              end
-            else
-              str << _(" +Spell Damage: %{damage}") % {
-                :damage => char.spell[:damage].values.first
+        if what
+          case what
+            when :talents
+              trees = char.talents.map {|t| t[:points]}.join("/")
+              str << _("%{spec} %{class}, %{trees} -- %{url}") % {
+                :spec  => char.spec.to_s.cew,
+                :class => char.class,
+                :trees => trees,
+                :url   => char.talents_exact
               }
-            end
-          
-          end
-          
-          str << " |"
-          
-          # spell hit
-          str << _(" Hit: %{hit} (%{percent}%)") % {
-            :hit     => char.spell[:hit_rating][:value],
-            :percent => char.spell[:hit_rating][:inc_percent]
-          } if char.spell[:hit_rating][:value] > 0
-          
-          # spell crit
-          str << _(" Crit: %{crit}%") % {
-            :crit => char.spell[:crit][:schools].values.first
-          }
-        # hunter's ranged stuff
-        elsif char.class == Hunter
-          str << _(" RAP: %{rap}") % {
-            :rap => char.ranged[:attack_power][:effective]
-          }
-          str << " |"        
-          str << _(" RCrit: %{percent}%") % {
-            :percent => char.ranged[:crit][:percent]
-          }          
-          str << _(" RHit: %{hit} (+%{percent}%)") % {
-            :hit     => char.ranged[:hit_rating][:value],
-            :percent => char.ranged[:hit_rating][:inc_percent],
-          } if char.ranged[:hit_rating][:value] > 0
-          
-        # tanks
-        elsif char.tank?
-          str << _(" Defense: %{defense}") % {
-            :defense => (char.defenses[:defense][:value]+char.defenses[:defense][:plus_def]).to_i
-          }          
-          str << _(" Dodge: %{percent}%") % {
-            :percent => char.defenses[:dodge][:percent]
-          }
-          
-          if char.class == Warrior or char.class == Paladin
-            str << _(" Armor: %{armor} (-%{percent}%)") % {
-              :armor   => char.defenses[:armor][:effective],
-              :percent => char.defenses[:armor][:percent]
-            }
-            str << _(" Block: %{percent}%") % {
-              :percent => char.defenses[:block][:percent]
-            }
-            str << _(" Parry: %{percent}%") % {
-              :percent => char.defenses[:parry][:percent]
-            }
           end
         else
-          str << _(" AP: %{ap}") % {
-            :ap => char.melee[:attack_power][:effective]
+          str << char.title[:prefix]+char.name+char.title[:suffix]
+          str << ' <'+char.guild+'>' unless char.guild.nil? || char.guild.empty?
+        
+          str << _(", %{level} %{race} %{class}") % {
+            :level => char.level,
+            :race  => char.race.to_s.cew,
+            :class => char.class.to_s
           }
+        
+          trees = char.talents.map {|t| t[:points]}.join("/")
+          str << _(" (%{talents}, %{spec})") % {
+            :talents => trees,
+            :spec => char.spec.to_s.cew
+          }
+
+          # hp and mana
+          str << _(" | H: %{health}") % {
+            :health => colorize(char.stats[:health], :red)
+          }
+        
+          str << _(" M: %{mana}") % {
+            :mana => colorize(char.stats[:mana], :blue)
+          } if char.stats[:mana]
+        
+          str << _(" Resilience: %{resi} (-%{hit}%)") % {
+            :resi => colorize(char.defenses[:resilience][:value], :yellow),
+            :hit => char.defenses[:resilience][:hit_percent]
+          } if char.defenses[:resilience][:value] > 0
+        
           str << " |"
-          str << _(" Crit: %{percent}%") % {
-            :percent => char.melee[:crit][:percent]
-          }          
-          str << _(" Hit: %{hit} (+%{percent}%)") % {
-            :hit     => char.melee[:hit_rating][:value],
-            :percent => char.melee[:hit_rating][:inc_percent],
-          } if char.melee[:hit_rating][:value] > 0
-        end
         
-        # special gear
+          # class and spec specific attributes
         
-        unless char.gear.values.map { |e| e.values }.flatten.max.zero?
-          str << " | "
+          if char.caster?
+            if char.healer?
+              str << _(" +Healing: %{healing}") % {
+                :healing => char.spell[:healing]
+              }
+            
+              str << _(" +mp5: %{mp5}") % {
+                :mp5 => char.spell[:mp5]
+              }            
+            elsif char.caster?
+              if char.spell[:damage].values.uniq.size > 1
+                # spell schools relevant to the class have different damage bonuses
+                # so they are shown individually
           
-          gear = []
+                char.spell[:damage].each do |s,d|
+                  str << _(" +%{school}: %{damage}") % {
+                    :school => s.to_s.capitalize,
+                    :damage => d
+                  }
+                end
+              else
+                str << _(" +Spell Damage: %{damage}") % {
+                  :damage => char.spell[:damage].values.first
+                }
+              end
           
-          prefixes = {:pve => "T", :arena => "S"}
-          pieces   = {:pve   => {4=>5,5=>5,6=>8},
-                      :arena => {1=>5,2=>5,3=>5}}
-          
-          char.gear.keys.each do |type|
-            char.gear[type].each do |tier, amount|
-              
-              gear << _("%{prefix}%{tier}: %{amount}/%{max}") % {
-                :prefix => prefixes[type],
-                :tier   => tier,
-                :amount => amount,
-                :max    => pieces[type][tier]
-              } unless amount.zero?
             end
+          
+            str << " |"
+          
+            # spell hit
+            str << _(" Hit: %{hit} (%{percent}%)") % {
+              :hit     => char.spell[:hit_rating][:value],
+              :percent => char.spell[:hit_rating][:inc_percent]
+            } if char.spell[:hit_rating][:value] > 0
+          
+            # spell crit
+            str << _(" Crit: %{crit}%") % {
+              :crit => char.spell[:crit][:schools].values.first
+            }
+          # hunter's ranged stuff
+          elsif char.class == Hunter
+            str << _(" RAP: %{rap}") % {
+              :rap => char.ranged[:attack_power][:effective]
+            }
+            str << " |"        
+            str << _(" RCrit: %{percent}%") % {
+              :percent => char.ranged[:crit][:percent]
+            }          
+            str << _(" RHit: %{hit} (+%{percent}%)") % {
+              :hit     => char.ranged[:hit_rating][:value],
+              :percent => char.ranged[:hit_rating][:inc_percent],
+            } if char.ranged[:hit_rating][:value] > 0
+          
+          # tanks
+          elsif char.tank?
+            str << _(" Defense: %{defense}") % {
+              :defense => (char.defenses[:defense][:value]+char.defenses[:defense][:plus_def]).to_i
+            }          
+            str << _(" Dodge: %{percent}%") % {
+              :percent => char.defenses[:dodge][:percent]
+            }
+          
+            if char.class == Warrior or char.class == Paladin
+              str << _(" Armor: %{armor} (-%{percent}%)") % {
+                :armor   => char.defenses[:armor][:effective],
+                :percent => char.defenses[:armor][:percent]
+              }
+              str << _(" Block: %{percent}%") % {
+                :percent => char.defenses[:block][:percent]
+              }
+              str << _(" Parry: %{percent}%") % {
+                :percent => char.defenses[:parry][:percent]
+              }
+            end
+          else
+            str << _(" AP: %{ap}") % {
+              :ap => char.melee[:attack_power][:effective]
+            }
+            str << " |"
+            str << _(" Crit: %{percent}%") % {
+              :percent => char.melee[:crit][:percent]
+            }          
+            str << _(" Hit: %{hit} (+%{percent}%)") % {
+              :hit     => char.melee[:hit_rating][:value],
+              :percent => char.melee[:hit_rating][:inc_percent],
+            } if char.melee[:hit_rating][:value] > 0
           end
-          
-          
-          str << gear.join(", ")
-        end
         
-        # PVP
-        # arena teams
+          # special gear
         
-        str << " |"
-        unless char.arena_teams.empty?
+          unless char.gear.values.map { |e| e.values }.flatten.max.zero?
+            str << " | "
           
-          teams = [2, 3, 5].map do |s|
-            if char.arena_teams[s]
-              char.arena_teams[s].rating
-            else
-              "-"
+            gear = []
+          
+            prefixes = {:pve => "T", :arena => "S"}
+            pieces   = {:pve   => {4=>5,5=>5,6=>8},
+                        :arena => {1=>5,2=>5,3=>5}}
+          
+            char.gear.keys.each do |type|
+              char.gear[type].each do |tier, amount|
+              
+                gear << _("%{prefix}%{tier}: %{amount}/%{max}") % {
+                  :prefix => prefixes[type],
+                  :tier   => tier,
+                  :amount => amount,
+                  :max    => pieces[type][tier]
+                } unless amount.zero?
+              end
             end
-          end.join("/")
           
-          str << _(" Arena: (%{teams})") % {
-            :teams => teams
-          }
           
+            str << gear.join(", ")
+          end
+        
+          # PVP
+          # arena teams
+        
+          str << " |"
+          unless char.arena_teams.empty?
+          
+            teams = [2, 3, 5].map do |s|
+              if char.arena_teams[s]
+                char.arena_teams[s].rating
+              else
+                "-"
+              end
+            end.join("/")
+          
+            str << _(" Arena: (%{teams})") % {
+              :teams => teams
+            }
+          
+          end
+        
+          str << _(" Points: %{ap}") % {
+            :ap => char.pvp[:arena_points]
+          } if char.pvp[:arena_points] > 0
+        
+          str << _(" LHKs: %{lhk}") % {
+            :lhk => char.pvp[:lifetime_kills]
+          } if char.pvp[:lifetime_kills] > 0
         end
-        
-        str << _(" Points: %{ap}") % {
-          :ap => char.pvp[:arena_points]
-        } if char.pvp[:arena_points] > 0
-        
-        str << _(" LHKs: %{lhk}") % {
-          :lhk => char.pvp[:lifetime_kills]
-        } if char.pvp[:lifetime_kills] > 0
-        
     end
     return str
   end

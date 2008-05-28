@@ -1,6 +1,7 @@
 require "net/http"
 require "rubygems"
 require "hpricot"
+require "shorturl"
 require "erb"
 
 TALENT_TREES = {
@@ -195,6 +196,19 @@ class Character
     end
   end
   
+  def talents_exact
+    unless @talents_hash
+      blizzard_hash = Armory.new(@region).talents(@name, @realm)
+      
+      @talents_hash = {:blizzard => blizzard_hash,
+                       :wowhead  => self.class.to_s.downcase+'-'+blizzard_hash}
+                       
+      @talents_hash[:tinyurl] = ShortURL.shorten("http://www.wowhead.com/?talent="+@talents_hash[:wowhead], :lns)
+    end
+    
+    @talents_hash[:tinyurl]
+  end
+  
   def tank?
     false
   end
@@ -363,17 +377,26 @@ class Armory
     http_get("/character-#{page.to_s}.xml?r=#{ERB::Util.url_encode(realm)}&n=#{name}")
   end
   
-  def character(name, realm)    
+  def character(name, realm)
     sheet_xml = get_character(:sheet, name, realm)
     char = parse_character(:sheet, sheet_xml)
     
     return char
   end
   
+  def talents(name, realm)
+    sheet_xml = get_character(:talents, name, realm)
+    talents = parse_character(:talents, sheet_xml)
+    
+    return talents
+  end
+  
   def parse_character(page, xml)
     xml = Hpricot.XML(xml)
     
     case page
+      when :talents
+        return (xml/:characterInfo/:talentTab/:talentTree).first.attributes["value"]
       when :sheet
         character_info = (xml/:characterInfo).first.attributes
         
@@ -549,7 +572,7 @@ class Armory
         
           members_xml = (team/:members/:character)
           members_xml.each do |member|
-            member_char = char.class::parse_hash(member.attributes)
+            member_char = Object.const_get(member.attributes["class"])::parse_hash(member.attributes)
             member_char.realm  = char.realm
             member_char.region = char.region
             
@@ -654,8 +677,6 @@ class ArenaTeam
 
     return team
   end
-  
-  
 end
 
 class Cache
