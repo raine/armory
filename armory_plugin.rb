@@ -1,7 +1,7 @@
 # TO DO:
 # 
 # - url in the end
-# - professions
+# - professions keyword
 
 require '~/armory'
 
@@ -32,17 +32,19 @@ class ArmoryPlugin < Plugin
   end
   
   def help(plugin, topic="")
+    keywords = ["2vs2 etc", "talents"]
+    
     case topic
     when 'commands'
       "Commands: c(haracter), s(earch), last | 'help armory <command>' for more info on specific command"
     when 'c'
-      "Usage: c [<region>] <character name> [<realm>] [<keywords>] | Keywords: 2|3|5vs2|3|5 | Examples: 'c us serennia cho'gall 2on2'"
+      "Usage: c [<region>] <character name> [<realm>] [<keywords>] | Keywords: #{keywords.map { |e| ":"+e }.join(", ")} | Examples: 'c us serennia cho'gall 2on2'"
     when 's'
       "Usage: s [<region>] <character name> [<keywords>] | Keywords can be attributes like 'tauren', 'gnome' or '<Guild>' | Examples: 's eu athene hunter blood elf', 's punisher orc warrior' | Upon getting search results you can get armory profiles of those characters using '!<result id>'"
     when 'last'
-      "Usage: last [<keywords>] | Keywords: 2|3|5vs2|3|5 | Used to access latest armory profile that has been fetched from armory"
+      "Usage: last [<keywords>] | Keywords: #{keywords.join(", ")} | Used to access latest armory profile that has been fetched from armory"
     else
-      "Armory plugin -- Commands: c(haracter), s(earch), last | 'help armory <command>' for more info on specific command"
+      "Armory plugin -- Commands: c(haracter), s(earch), last | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot.txt for elaborate help"
     end
   end
   
@@ -481,6 +483,11 @@ class ArmoryPlugin < Plugin
           str << _(" LHKs: %{lhk}") % {
             :lhk => char.pvp[:lifetime_kills]
           } if char.pvp[:lifetime_kills] > 0
+          
+          str << _(" | URL: %{url}") % {
+            :url => char.url
+          }
+          
         end
     end
     return str

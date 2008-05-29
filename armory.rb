@@ -209,6 +209,12 @@ class Character
     @talents_hash[:tinyurl]
   end
   
+  def url
+    @armory_url = ShortURL::shorten('http://'+Armory::REGIONS[@region]+
+                  '/character-sheet.xml?r='+ERB::Util.url_encode(@realm)+'&n='+@name, :lns) if @armory_url.nil?
+    @armory_url
+  end
+  
   def tank?
     false
   end
@@ -318,7 +324,7 @@ end
 
 class Shaman<Character
   def schools
-    [:elemental, :nature]
+    [:nature]
   end
   
   def caster?
@@ -738,3 +744,5 @@ class CharacterCache<Cache
     end
   end
 end
+
+pp Armory.new(:eu).character("Blowfish", "Nagrand")
