@@ -744,5 +744,3 @@ class CharacterCache<Cache
     end
   end
 end
-
-pp Armory.new(:eu).character("Blowfish", "Nagrand")
