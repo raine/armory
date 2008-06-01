@@ -203,7 +203,7 @@ class Character
       @talents_hash = {:blizzard => blizzard_hash,
                        :wowhead  => self.class.to_s.downcase+'-'+blizzard_hash}
                        
-      @talents_hash[:tinyurl] = ShortURL.shorten("http://www.wowhead.com/?talent="+@talents_hash[:wowhead], :lns)
+      @talents_hash[:tinyurl] = ShortURL.shorten("http://www.wowhead.com/?talent="+@talents_hash[:wowhead], :fyad)
     end
     
     @talents_hash[:tinyurl]
@@ -211,7 +211,7 @@ class Character
   
   def url
     @armory_url = ShortURL::shorten('http://'+Armory::REGIONS[@region]+
-                  '/character-sheet.xml?r='+ERB::Util.url_encode(@realm)+'&n='+@name, :lns) if @armory_url.nil?
+                  '/character-sheet.xml?r='+ERB::Util.url_encode(@realm)+'&n='+@name, :fyad) if @armory_url.nil?
     @armory_url
   end
   
@@ -744,3 +744,5 @@ class CharacterCache<Cache
     end
   end
 end
+
+p Armory.new(:eu).character("jakuten", "shattered halls").url

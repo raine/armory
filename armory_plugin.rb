@@ -1,7 +1,6 @@
 # TO DO:
 # 
-# - url in the end
-# - professions keyword
+#
 
 require '~/armory'
 
@@ -107,8 +106,8 @@ class ArmoryPlugin < Plugin
         else
           m.reply "character doesn't have a team in that bracket"
         end
-      when :"talents"
-        m.reply output(char, :talents)
+      when :talents, :professions
+        m.reply output(char, keyword)
       end
     else
       m.reply output(char)
@@ -125,6 +124,9 @@ class ArmoryPlugin < Plugin
     when /talents/i
       # talents
       return :talents
+    when /profession|professions|prof|profs/i
+      # professions
+      return :professions
     end
   end
   
@@ -305,6 +307,10 @@ class ArmoryPlugin < Plugin
                 :trees => trees,
                 :url   => char.talents_exact
               }
+            when :professions
+              str << char.professions.map do |prof|
+                "#{prof[:name].to_s.capitalize} #{prof[:value]}/#{prof[:max]}"
+              end.join(", ")
           end
         else
           str << char.title[:prefix]+char.name+char.title[:suffix]
