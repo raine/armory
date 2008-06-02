@@ -751,5 +751,3 @@ class CharacterCache<Cache
     end
   end
 end
-
-p Armory.new(:eu).character("jakuten", "shattered halls").url

@@ -45,7 +45,7 @@ class ArmoryPlugin < Plugin
     when 'l'
       "Usage: l [<region>] <character name> [<search keywords>] [<other keyword>] | Search keywords are same that can be used for normal searches. Other Keywords: #{keywords.map { |e| ":"+e }.join(", ")} | Similar to Google's feeling lucky search, returning profile of the most relevant character | Example: 'l serennia gnome warrior :2vs2' would return 2vs2 team info of gnome warrior named Serennia"
     else
-      "Armory plugin -- Commands: c(haracter), s(earch), last | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot.txt for elaborate help"
+      "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky) | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot.txt for elaborate help"
     end
   end
   
@@ -525,16 +525,14 @@ plugin = ArmoryPlugin.new
 plugin.map "s [:region] :name [*keywords]",
   :action => 'search_action',
   :requirements => {:name => %r{^[^-\d\s]+$}u, 
-                    :region => %r{eu|us}}
+                    :region => %r{eu|us}} 
 plugin.map "c [:region] :name [*realm] [*keywords]",
   :action => 'character_action',
   :requirements => {:name => %r{^[^-\d\s]+$}u,
                     :region => %r{eu|us},
                     :realm => %r{['A-Za-z\-\s]+}}
-
 plugin.map "last [*keywords]",
   :action => 'last'
-  
 plugin.map "l [:region] :name [*keywords] [*keywords2]",
   :action => 'lucky',
   :requirements => {:name => %r{^[^-\d\s]+$}u,
