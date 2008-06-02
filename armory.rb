@@ -368,11 +368,18 @@ class Armory
   end
     
   def start_session(reg)
-    Net::HTTP.new(REGIONS[reg])
+    http = Net::HTTP.new(REGIONS[reg])
+    http.open_timeout = 10
+    
+    return http
   end
   
-  def http_get(path)    
-    res = @armory_http.get(path, HEADERS)
+  def http_get(path)
+    begin
+      res = @armory_http.get(path, HEADERS)
+    rescue Timeout::Error
+      raise "timeout"
+    end
     
     raise "armory fails" unless res.code_type == Net::HTTPOK
     

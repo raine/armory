@@ -31,17 +31,19 @@ class ArmoryPlugin < Plugin
   end
   
   def help(plugin, topic="")
-    keywords = ["2vs2 etc", "talents"]
+    keywords = ["2vs2 etc", "talents", "professions"]
     
     case topic
     when 'commands'
-      "Commands: c(haracter), s(earch), last | 'help armory <command>' for more info on specific command"
+      "Commands: c(haracter), s(earch), last, l(ucky) | 'help armory <command>' for more info on specific command"
     when 'c'
       "Usage: c [<region>] <character name> [<realm>] [<keywords>] | Keywords: #{keywords.map { |e| ":"+e }.join(", ")} | Examples: 'c us serennia cho'gall 2on2'"
     when 's'
       "Usage: s [<region>] <character name> [<keywords>] | Keywords can be attributes like 'tauren', 'gnome' or '<Guild>' | Examples: 's eu athene hunter blood elf', 's punisher orc warrior' | Upon getting search results you can get armory profiles of those characters using '!<result id>'"
     when 'last'
       "Usage: last [<keywords>] | Keywords: #{keywords.join(", ")} | Used to access latest armory profile that has been fetched from armory"
+    when 'l'
+      "Usage: l [<region>] <character name> [<search keywords>] [<other keyword>] | Search keywords are same that can be used for normal searches. Other Keywords: #{keywords.map { |e| ":"+e }.join(", ")} | Similar to Google's feeling lucky search, returning profile of the most relevant character | Example: 'l serennia gnome warrior :2vs2' would return 2vs2 team info of gnome warrior named Serennia"
     else
       "Armory plugin -- Commands: c(haracter), s(earch), last | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot.txt for elaborate help"
     end
@@ -140,38 +142,9 @@ class ArmoryPlugin < Plugin
     character(char.name, char.realm, char.region, m, params)
   end
   
-  def search(m, params)
-    if params[:region].nil?
-      region = @bot.config['armory.region'].to_sym
-    else
-      region = params[:region].to_sym
-    end
-    
-    result = Armory.new(region).search(:character, params[:name])
+  def search_action(m, params)
+    result = search(params)
       
-    # check for additional keywords like race or class
-    unless params[:keywords].empty?      
-      str = params[:keywords].to_s
-      
-      keywords = {}
-      
-      keywords[:race]  = $1 if str =~ /(#{RACES.join("|")})/i
-      keywords[:class] = $1 if str =~ /(#{CLASSES.join("|")})/i
-      keywords[:guild] = $1 if str =~ /<([A-Za-z\-\s]+)>/i
-      
-      if keywords[:race]
-        result.delete_if { |c| c.race.to_s.downcase != keywords[:race].downcase }
-      end
-      
-      if keywords[:class]
-        result.delete_if { |c| c.class.to_s.downcase != keywords[:class].downcase }
-      end
-      
-      if keywords[:guild]
-        result.delete_if { |c| c.guild.to_s.downcase != keywords[:guild].downcase }
-      end
-    end
-
     if result.empty?
       m.reply "no results"
       return
@@ -207,6 +180,50 @@ class ArmoryPlugin < Plugin
     end
     
     m.reply "<#{result.size}> "+res.join(", ")
+  end
+  
+  def search(params)
+    if params[:region].nil?
+      region = @bot.config['armory.region'].to_sym
+    else
+      region = params[:region].to_sym
+    end
+    
+    # initial result
+    result = Armory.new(region).search(:character, params[:name])
+    
+    # check for additional keywords like race or class
+    unless params[:keywords].empty?
+      str = params[:keywords].to_s
+      
+      keywords = {}
+      
+      # parse keywords
+      keywords[:race]  = $1 if str =~ /(#{RACES.join("|")})/i
+      keywords[:class] = $1 if str =~ /(#{CLASSES.join("|")})/i
+      keywords[:guild] = $1 if str =~ /<([A-Za-z\-\s]+)>/i
+      
+      # remove entries that don't match the given keywords
+      keywords.each do |keyword, value|
+        result.delete_if { |c| c.send(keyword.to_s).to_s.downcase != value.downcase }
+      end
+    end
+    
+    return result
+  end
+  
+  # search similar to "I'm feeling lucky" in google
+  def lucky(m, params)
+    result = search(params)
+    
+    if result.empty?
+      m.reply "out of luck!"
+      return
+    end
+    
+    first = result.first
+    
+    character(first.name, first.realm, first.region, m, {:keywords => params[:keywords2]})
   end
 
   def message(m)
@@ -506,7 +523,7 @@ end
 
 plugin = ArmoryPlugin.new
 plugin.map "s [:region] :name [*keywords]",
-  :action => 'search',
+  :action => 'search_action',
   :requirements => {:name => %r{^[^-\d\s]+$}u, 
                     :region => %r{eu|us}}
 plugin.map "c [:region] :name [*realm] [*keywords]",
@@ -517,3 +534,9 @@ plugin.map "c [:region] :name [*realm] [*keywords]",
 
 plugin.map "last [*keywords]",
   :action => 'last'
+  
+plugin.map "l [:region] :name [*keywords] [*keywords2]",
+  :action => 'lucky',
+  :requirements => {:name => %r{^[^-\d\s]+$}u,
+                    :region => %r{eu|us},
+                    :keywords2 => %r{^:\w+$}}
