@@ -39,13 +39,15 @@ class ArmoryPlugin < Plugin
     when 'c'
       "Usage: c [<region>] <character name> [<realm>] [<keywords>] | Keywords: #{keywords.map { |e| ":"+e }.join(", ")} | Examples: 'c us serennia cho'gall 2on2'"
     when 's'
-      "Usage: s [<region>] <character name> [<keywords>] | Keywords can be attributes like 'tauren', 'gnome' or '<Guild>' | Examples: 's eu athene hunter blood elf', 's punisher orc warrior' | Upon getting search results you can get armory profiles of those characters using '!<result id>'"
+      "Usage: s [<region>] <character name> [<keywords>] | Keywords can be attributes like 'tauren', 'gnome', '<Guild>' or a name of a battlegroup | Examples: 's eu athene hunter blood elf', 's punisher orc warrior' | Upon getting search results you can get armory profiles of those characters using '!<result id>'"
     when 'last'
       "Usage: last [<keywords>] | Keywords: #{keywords.join(", ")} | Used to access latest armory profile that has been fetched from armory"
     when 'l'
       "Usage: l [<region>] <character name> [<search keywords>] [<other keyword>] | Search keywords are same that can be used for normal searches. Other Keywords: #{keywords.map { |e| ":"+e }.join(", ")} | Similar to Google's feeling lucky search, returning profile of the most relevant character | Example: 'l serennia gnome warrior :2vs2' would return 2vs2 team info of gnome warrior named Serennia"
+    when 'q'
+      "Usage: q [<region>] <character name> <bracket> [<keywords>] | Bracket: 2|3|5 | Keywords: see help for 'c'"
     else
-      "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky) | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot.txt for elaborate help"
+      "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky), q(uick) | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot.txt for elaborate help"
     end
   end
   
@@ -77,7 +79,6 @@ class ArmoryPlugin < Plugin
     # check cache and stuff
     
     if @bot.config['armory.cache'] && cached = @cache.find_character(name, realm, region)
-      pp "using cache "
       char = cached
     else
       begin
@@ -199,9 +200,11 @@ class ArmoryPlugin < Plugin
       keywords = {}
       
       # parse keywords
-      keywords[:race]  = $1 if str =~ /(#{RACES.join("|")})/i
-      keywords[:class] = $1 if str =~ /(#{CLASSES.join("|")})/i
-      keywords[:guild] = $1 if str =~ /<([A-Za-z\-\s]+)>/i
+      keywords[:race]        = $1 if str =~ /(#{RACES.join("|")})/i
+      keywords[:class]       = $1 if str =~ /(#{CLASSES.join("|")})/i
+      keywords[:guild]       = $1 if str =~ /<([A-Za-z\-\s]+)>/i
+      keywords[:level]       = $1 if str =~ /(\d{2})/
+      keywords[:battlegroup] = $1 if str =~ /(#{BATTLEGROUPS.join("|")})/i
       
       # remove entries that don't match the given keywords
       keywords.each do |keyword, value|
@@ -224,6 +227,43 @@ class ArmoryPlugin < Plugin
     first = result.first
     
     character(first.name, first.realm, first.region, m, {:keywords => params[:keywords2]})
+  end
+  
+  def quick(m, params)
+    params[:keywords]<<70.to_s
+
+    result = search(params)
+    
+    if result.empty?
+      m.reply "no results"
+      return
+    end
+
+    first = result.first
+    
+    cached = @cache.find_character(first.name, first.realm, first.region)
+    
+    char = if cached
+      cached
+    else
+      Armory.new(first.region).character(first.name, first.realm)
+    end
+    
+    @cache.save_character(char)
+    
+    bracket = params[:bracket].to_i
+    
+    if char.arena_teams[bracket]
+      team = char.arena_teams[bracket]
+      
+      m.reply output(team)
+      
+      team.members.each do |member|
+        character(member.name, member.realm, member.region, m)
+      end
+    else
+      m.reply "character found doesn't have team in that bracket"
+    end
   end
 
   def message(m)
@@ -524,17 +564,22 @@ end
 plugin = ArmoryPlugin.new
 plugin.map "s [:region] :name [*keywords]",
   :action => 'search_action',
-  :requirements => {:name => %r{^[^-\d\s]+$}u, 
+  :requirements => {:name   => %r{^[^-\d\s]+$}u, 
                     :region => %r{eu|us}} 
 plugin.map "c [:region] :name [*realm] [*keywords]",
   :action => 'character_action',
-  :requirements => {:name => %r{^[^-\d\s]+$}u,
+  :requirements => {:name   => %r{^[^-\d\s]+$}u,
                     :region => %r{eu|us},
-                    :realm => %r{['A-Za-z\-\s]+}}
+                    :realm  => %r{['A-Za-z\-\s]+}}
 plugin.map "last [*keywords]",
   :action => 'last'
 plugin.map "l [:region] :name [*keywords] [*keywords2]",
   :action => 'lucky',
-  :requirements => {:name => %r{^[^-\d\s]+$}u,
-                    :region => %r{eu|us},
-                    :keywords2 => %r{^:\w+$}}
+  :requirements => {:name      => %r{^[^-\d\s]+$}u,
+                    :region    => %r{eu|us},
+                    :keywords2 => %r{^:\w+$}}          
+plugin.map "q [:region] :name :bracket [*keywords]",
+  :action => 'quick',
+  :requirements => {:name    => %r{^[^-\d\s]+$}u,
+                    :region  => %r{eu|us},
+                    :bracket => %r{2|3|5}}

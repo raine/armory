@@ -16,6 +16,8 @@ TALENT_TREES = {
   :warrior => [:arms, :fury, :protection]
 }
 
+BATTLEGROUPS = %w(bloodlust cyclone emberstorm nightfall rampage reckoning retaliation ruin shadowburn stormstrike vindication whirlwind blackout conviction misery todbringer blutdurst raserel verderbnis glutsturm schattenbrand hinterhalt sturmangriff cataclysme férocité vengeance némésis représailles crueldad)
+
 SPELL_SCHOOLS = %w(arcane fire frost holy nature shadow)
 
 RACES = ["tauren", "undead", "troll", "blood elf", "orc",
