@@ -47,7 +47,7 @@ class ArmoryPlugin < Plugin
     when 'q'
       "Usage: q [<region>] <character name> <bracket> [<keywords>] | Bracket: 2|3|5 | Keywords: see help for 'c'"
     else
-      "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky), q(uick) | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot.txt for elaborate help"
+      "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky), q(uickc) | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot.txt for elaborate help"
     end
   end
   
@@ -75,7 +75,7 @@ class ArmoryPlugin < Plugin
     character(name, realm, region, m, params)
   end
   
-  def character(name, realm, region, m, params=nil)
+  def character(name, realm, region, m, params=nil, options=nil)
     # check cache and stuff
     
     if @bot.config['armory.cache'] && cached = @cache.find_character(name, realm, region)
@@ -113,7 +113,7 @@ class ArmoryPlugin < Plugin
         m.reply output(char, keyword)
       end
     else
-      m.reply output(char)
+      m.reply output(char, nil, options)
     end
   end
   
@@ -226,7 +226,7 @@ class ArmoryPlugin < Plugin
     
     first = result.first
     
-    character(first.name, first.realm, first.region, m, {:keywords => params[:keywords2]})
+    character(first.name, first.realm, first.region, m, {:keywords => params[:keywords2]}, {:show_realm => true})
   end
   
   def quick(m, params)
@@ -254,8 +254,10 @@ class ArmoryPlugin < Plugin
     bracket = params[:bracket].to_i
     
     if char.arena_teams[bracket]
+      
       team = char.arena_teams[bracket]
       
+      @temp[source][:arena_team] = team.members
       m.reply output(team)
       
       team.members.each do |member|
@@ -282,7 +284,7 @@ class ArmoryPlugin < Plugin
       if searched_char
         character(searched_char.name,
                   searched_char.realm,
-                  searched_char.region, m, params)
+                  searched_char.region, m, params, {:show_realm => true})
       end
     when /%/ # arena team member prefix
       return unless @temp[source][:arena_team]
@@ -297,7 +299,7 @@ class ArmoryPlugin < Plugin
     end
   end
   
-  def output(obj, what=nil)
+  def output(obj, what=nil, options=nil)
     str = String.new
     
     case obj
@@ -372,6 +374,7 @@ class ArmoryPlugin < Plugin
         else
           str << char.title[:prefix]+char.name+char.title[:suffix]
           str << ' <'+char.guild+'>' unless char.guild.nil? || char.guild.empty?
+          str << ' ('+char.realm+')' if options && options[:show_realm]
         
           str << _(", %{level} %{race} %{class}") % {
             :level => char.level,

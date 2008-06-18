@@ -366,7 +366,12 @@ class Armory
     raise "invalid region" unless REGIONS.has_key?(region)
     
     @region = region
-    @armory_http = start_session(region)
+    
+    begin
+      @armory_http = start_session(region)
+    rescue Timeout::Error
+      raise "timeout"
+    end  
   end
     
   def start_session(reg)
@@ -377,11 +382,7 @@ class Armory
   end
   
   def http_get(path)
-    begin
-      res = @armory_http.get(path, HEADERS)
-    rescue Timeout::Error
-      raise "timeout"
-    end
+    res = @armory_http.get(path, HEADERS)
     
     raise "armory fails" unless res.code_type == Net::HTTPOK
     
