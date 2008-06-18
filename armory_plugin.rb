@@ -47,11 +47,11 @@ class ArmoryPlugin < Plugin
     when 'q'
       "Usage: q [<region>] <character name> <bracket> [<keywords>] | Bracket: 2|3|5 | Keywords: see help for 'c'"
     when 'me'
-      "Usage: me [<keywords>] | Keywords: #{keywords.map { |e| ":"+e }.join(", ")} | Used to access your own predefined character"
+      "Usage: me [<keywords>] | Keywords: #{keywords.join(", ")} | Used to access your own predefined character"
     when 'iam'
       "Usage: iam <region> <character name> <realm> | Used to set your own predefined character"
     else
-      "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky), q(uickc) | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot.txt for elaborate help"
+      "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky), q(uick), me, iam | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot.txt for elaborate help"
     end
   end
   
@@ -597,6 +597,8 @@ plugin.map "l [:region] :name [*keywords] [*keywords2]",
 plugin.map "q [:region] :name :bracket [*keywords]",
   :action => 'quick', :requirements => {:name => %r{^[^-\d\s]+$}u, :region => %r{eu|us}, :bracket => %r{2|3|5}}
 plugin.map "me [*keywords]",
+  :action => 'get_own_character',
+plugin.map "my [*keywords]",
   :action => 'get_own_character'
 plugin.map "iam :region :name *realm",
   :action => 'set_own_character', :requirements => {:name => %r{^[^-\d\s]+$}u, :region => %r{eu|us}, :realm => %r{['A-Za-z\-\s]+}}
