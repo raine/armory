@@ -46,6 +46,10 @@ class ArmoryPlugin < Plugin
       "Usage: l [<region>] <character name> [<search keywords>] [<other keyword>] | Search keywords are same that can be used for normal searches. Other Keywords: #{keywords.map { |e| ":"+e }.join(", ")} | Similar to Google's feeling lucky search, returning profile of the most relevant character | Example: 'l serennia gnome warrior :2vs2' would return 2vs2 team info of gnome warrior named Serennia"
     when 'q'
       "Usage: q [<region>] <character name> <bracket> [<keywords>] | Bracket: 2|3|5 | Keywords: see help for 'c'"
+    when 'me'
+      "Usage: me [<keywords>] | Keywords: #{keywords.map { |e| ":"+e }.join(", ")} | Used to access your own predefined character"
+    when 'iam'
+      "Usage: iam <region> <character name> <realm> | Used to set your own predefined character"
     else
       "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky), q(uickc) | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot.txt for elaborate help"
     end
@@ -559,30 +563,40 @@ class ArmoryPlugin < Plugin
     return str
   end
   
+  def set_own_character(m, params)
+    m.source.set_botdata('armory.name',   params[:name])
+    m.source.set_botdata('armory.realm',  params[:realm].to_s)
+    m.source.set_botdata('armory.region', params[:region].to_sym)    
+    m.okay
+  end
+  
+  def get_own_character(m, params)
+    if m.source.get_botdata[:armory]
+      char = m.source.get_botdata[:armory]
+      character(char[:name], char[:realm], char[:region], m, params)
+    else
+      m.reply "you don't have character set"
+    end
+  end
+
   def colorize(str, color)
     Irc.color(color)+str.to_s+Irc.color()
   end
 end
 
 plugin = ArmoryPlugin.new
+
 plugin.map "s [:region] :name [*keywords]",
-  :action => 'search_action',
-  :requirements => {:name   => %r{^[^-\d\s]+$}u, 
-                    :region => %r{eu|us}} 
+  :action => 'search_action', :requirements => {:name => %r{^[^-\d\s]+$}u, :region => %r{eu|us}}   
 plugin.map "c [:region] :name [*realm] [*keywords]",
-  :action => 'character_action',
-  :requirements => {:name   => %r{^[^-\d\s]+$}u,
-                    :region => %r{eu|us},
-                    :realm  => %r{['A-Za-z\-\s]+}}
+  :action => 'character_action', :requirements => {:name => %r{^[^-\d\s]+$}u, :region => %r{eu|us}, :realm  => %r{['A-Za-z\-\s]+}}
 plugin.map "last [*keywords]",
   :action => 'last'
 plugin.map "l [:region] :name [*keywords] [*keywords2]",
-  :action => 'lucky',
-  :requirements => {:name      => %r{^[^-\d\s]+$}u,
-                    :region    => %r{eu|us},
-                    :keywords2 => %r{^:\w+$}}          
+  :action => 'lucky', :requirements => {:name => %r{^[^-\d\s]+$}u, :region => %r{eu|us}, :keywords2 => %r{^:\w+$}}          
 plugin.map "q [:region] :name :bracket [*keywords]",
-  :action => 'quick',
-  :requirements => {:name    => %r{^[^-\d\s]+$}u,
-                    :region  => %r{eu|us},
-                    :bracket => %r{2|3|5}}
+  :action => 'quick', :requirements => {:name => %r{^[^-\d\s]+$}u, :region => %r{eu|us}, :bracket => %r{2|3|5}}
+plugin.map "me [*keywords]",
+  :action => 'get_own_character'
+plugin.map "iam :region :name *realm",
+  :action => 'set_own_character', :requirements => {:name => %r{^[^-\d\s]+$}u, :region => %r{eu|us}, :realm => %r{['A-Za-z\-\s]+}}
