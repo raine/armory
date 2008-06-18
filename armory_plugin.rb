@@ -597,7 +597,7 @@ plugin.map "l [:region] :name [*keywords] [*keywords2]",
 plugin.map "q [:region] :name :bracket [*keywords]",
   :action => 'quick', :requirements => {:name => %r{^[^-\d\s]+$}u, :region => %r{eu|us}, :bracket => %r{2|3|5}}
 plugin.map "me [*keywords]",
-  :action => 'get_own_character',
+  :action => 'get_own_character'
 plugin.map "my [*keywords]",
   :action => 'get_own_character'
 plugin.map "iam :region :name *realm",
