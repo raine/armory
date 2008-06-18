@@ -51,7 +51,7 @@ class ArmoryPlugin < Plugin
     when 'iam'
       "Usage: iam <region> <character name> <realm> | Used to set your own predefined character"
     else
-      "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky), q(uick), me, iam | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot.txt for elaborate help"
+      "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky), q(uick), me (alias: my), iam | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot.txt for elaborate help"
     end
   end
   
@@ -540,7 +540,7 @@ class ArmoryPlugin < Plugin
               end
             end.join("/")
           
-            str << _(" Arena: (%{teams})") % {
+            str << _(" Arena: %{teams}") % {
               :teams => teams
             }
           
