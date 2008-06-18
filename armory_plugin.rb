@@ -128,7 +128,7 @@ class ArmoryPlugin < Plugin
     when /(2(?:on|v|vs)2|3(?:on|v|vs)3|5(?:on|v|vs)5)/i
       # 2[on|vs/v]2 etc.
       return $1.gsub(/(\d).*?\d/) { |match| $1+'vs'+$1 }.to_sym
-    when /talents/i
+    when /talents|spec/i
       # talents
       return :talents
     when /profession|professions|prof|profs/i
