@@ -263,8 +263,9 @@ class ArmoryPlugin < Plugin
     
     bracket = params[:bracket].to_i
     
+    source = m.replyto.to_s
+    
     if char.arena_teams[bracket]
-      
       team = char.arena_teams[bracket]
       
       @temp[source][:arena_team] = team.members
