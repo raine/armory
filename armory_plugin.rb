@@ -264,6 +264,7 @@ class ArmoryPlugin < Plugin
     bracket = params[:bracket].to_i
     
     source = m.replyto.to_s
+    @temp[source] = Hash.new unless @temp[source]
     
     if char.arena_teams[bracket]
       team = char.arena_teams[bracket]
