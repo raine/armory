@@ -50,8 +50,10 @@ class ArmoryPlugin < Plugin
       "Usage: me [<keywords>] | Keywords: #{keywords.join(", ")} | Used to access your own predefined character"
     when 'iam'
       "Usage: iam <region> <character name> <realm> | Used to set your own predefined character"
+    when 'show'
+      "Usage: show <nick> [keyword] | Used to access another user's preset character"
     else
-      "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky), q(uick), me (alias:my), iam | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot/ for elaborate help"
+      "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky), q(uick), me (alias:my), iam, show | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot/ for elaborate help"
     end
   end
   
