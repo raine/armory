@@ -376,7 +376,8 @@ class Armory
     
   def start_session(reg)
     http = Net::HTTP.new(REGIONS[reg])
-    http.open_timeout = 10
+    http.read_timeout = 10
+    http.read_timeout = 10
     
     return http
   end
@@ -416,7 +417,16 @@ class Armory
       when :sheet
         character_info = (xml/:characterInfo).first.attributes
         
-        raise character_info["errCode"] if character_info["errCode"]
+        if character_info["errCode"]
+          case character_info["errCode"]
+          when "noCharacter"
+            raise "character not found"
+          when "belowMinLevel"
+            raise "character is below minimum level"
+          else
+            raise character_info["errCode"]
+          end
+        end
         
         char_hash = (xml/:characterInfo/:character).first.attributes
         

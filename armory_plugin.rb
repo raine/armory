@@ -195,7 +195,11 @@ class ArmoryPlugin < Plugin
     end
     
     # initial result
-    result = Armory.new(region).search(:character, params[:name])
+    begin
+      result = Armory.new(region).search(:character, params[:name])
+    rescue => e
+      m.reply "error: #{e.message}"
+    end
     
     # check for additional keywords like race or class
     unless params[:keywords].empty?
