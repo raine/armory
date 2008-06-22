@@ -10,7 +10,7 @@ class ::String
   end
 end
 
-class ArmoryPlugin < Plugin  
+class ArmoryPlugin < Plugin
   Config.register Config::StringValue.new('armory.region',
     :default => "eu",
     :desc => "Default region")
@@ -51,7 +51,7 @@ class ArmoryPlugin < Plugin
     when 'iam'
       "Usage: iam <region> <character name> <realm> | Used to set your own predefined character"
     else
-      "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky), q(uick), me (alias: my), iam | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot.txt for elaborate help"
+      "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky), q(uick), me (alias:my), iam | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot/ for elaborate help"
     end
   end
   
@@ -578,27 +578,42 @@ class ArmoryPlugin < Plugin
       m.reply "you don't have character set"
     end
   end
+  
+  def get_user_character(m, params)
+    if m.server.get_user(params[:nick]).get_botdata[:armory]
+      char = m.server.get_user(params[:nick]).get_botdata[:armory]
+      character(char[:name], char[:realm], char[:region], m, params)
+    else
+      m.reply "#{params[:nick]} doesn't have a character set"
+    end
+  end
 
   def colorize(str, color)
     Irc.color(color)+str.to_s+Irc.color()
   end
 end
 
+REGEX_REGION   = %r{eu|us}i
+REGEX_CHARNAME = %r{^[^-\d\s]+$}u
+REGEX_REALM    = %r{['A-Za-z\-\s]+}
+
 plugin = ArmoryPlugin.new
 
 plugin.map "s [:region] :name [*keywords]",
-  :action => 'search_action', :requirements => {:name => %r{^[^-\d\s]+$}u, :region => %r{eu|us}}   
+  :action => 'search_action', :requirements => {:name => REGEX_CHARNAME, :region => REGEX_REGION}
 plugin.map "c [:region] :name [*realm] [*keywords]",
-  :action => 'character_action', :requirements => {:name => %r{^[^-\d\s]+$}u, :region => %r{eu|us}, :realm  => %r{['A-Za-z\-\s]+}}
+  :action => 'character_action', :requirements => {:name => REGEX_CHARNAME, :region => REGEX_REGION, :realm  => REGEX_REALM}
 plugin.map "last [*keywords]",
   :action => 'last'
 plugin.map "l [:region] :name [*keywords] [*keywords2]",
-  :action => 'lucky', :requirements => {:name => %r{^[^-\d\s]+$}u, :region => %r{eu|us}, :keywords2 => %r{^:\w+$}}          
+  :action => 'lucky', :requirements => {:name => REGEX_CHARNAME, :region => REGEX_REGION, :keywords2 => %r{^:\w+$}}          
 plugin.map "q [:region] :name :bracket [*keywords]",
-  :action => 'quick', :requirements => {:name => %r{^[^-\d\s]+$}u, :region => %r{eu|us}, :bracket => %r{2|3|5}}
+  :action => 'quick', :requirements => {:name => REGEX_CHARNAME, :region => REGEX_REGION, :bracket => %r{2|3|5}}
 plugin.map "me [*keywords]",
   :action => 'get_own_character'
 plugin.map "my [*keywords]",
   :action => 'get_own_character'
 plugin.map "iam :region :name *realm",
-  :action => 'set_own_character', :requirements => {:name => %r{^[^-\d\s]+$}u, :region => %r{eu|us}, :realm => %r{['A-Za-z\-\s]+}}
+  :action => 'set_own_character', :requirements => {:name => REGEX_CHARNAME, :region => REGEX_REGION, :realm => REGEX_REALM}
+plugin.map "show :nick [*keywords]",
+  :action => 'get_user_character', :requirements => {:nick => %r{[^\s]+}}
