@@ -150,7 +150,12 @@ class ArmoryPlugin < Plugin
   end
   
   def search_action(m, params)
-    result = search(params)
+    begin
+      result = search(params)
+    rescue => e
+      m.reply "error: #{e.message}"
+      return
+    end
       
     if result.empty?
       m.reply "no results"
@@ -197,11 +202,7 @@ class ArmoryPlugin < Plugin
     end
     
     # initial result
-    begin
-      result = Armory.new(region).search(:character, params[:name])
-    rescue => e
-      m.reply "error: #{e.message}"
-    end
+    result = Armory.new(region).search(:character, params[:name])
     
     # check for additional keywords like race or class
     unless params[:keywords].empty?
