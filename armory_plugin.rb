@@ -49,7 +49,7 @@ class ArmoryPlugin < Plugin
     when 'me'
       "Usage: me [<keywords>] | Keywords: #{keywords.join(", ")} | Used to access your own predefined character"
     when 'iam'
-      "Usage: iam <region> <character name> <realm> | Used to set your own predefined character"
+      "Usage: iam [<region>] <character name> [<realm>] | Used to set your own predefined character"
     when 'show'
       "Usage: show <nick> [keyword] | Used to access another user's preset character"
     else
@@ -572,10 +572,31 @@ class ArmoryPlugin < Plugin
   end
   
   def set_own_character(m, params)
-    m.source.set_botdata('armory.name',   params[:name])
-    m.source.set_botdata('armory.realm',  params[:realm].to_s)
-    m.source.set_botdata('armory.region', params[:region].to_sym)    
-    m.okay
+    if params[:region].nil? && !@bot.config['armory.region']
+      m.reply "default region not set, specify region"
+      return
+    elsif params[:region]
+      region = params[:region].to_sym
+    else
+      region = @bot.config['armory.region'].to_sym
+    end
+      
+    if params[:realm].empty? && !@bot.config['armory.realm']
+      m.reply "default realm not set, specify realm"
+      return
+    elsif !params[:realm].empty?
+      realm = params[:realm].to_s
+    else
+      realm = @bot.config['armory.realm']
+    end
+    
+    name = params[:name]
+    
+    m.source.set_botdata('armory.name',   name)
+    m.source.set_botdata('armory.realm',  realm)
+    m.source.set_botdata('armory.region', region)
+    
+    m.reply "#{m.source.nick} is now #{name.capitalize} of the #{realm.cew} (#{region.to_s.upcase})"
   end
   
   def get_own_character(m, params)
@@ -583,7 +604,7 @@ class ArmoryPlugin < Plugin
       char = m.source.get_botdata[:armory]
       character(char[:name], char[:realm], char[:region], m, params)
     else
-      m.reply "you don't have character set"
+      m.reply "you don't have a character set, see ´#{@bot.config[:"core.address_prefix"]}help armory iam´ for help"
     end
   end
   
@@ -621,7 +642,7 @@ plugin.map "me [*keywords]",
   :action => 'get_own_character'
 plugin.map "my [*keywords]",
   :action => 'get_own_character'
-plugin.map "iam :region :name *realm",
+plugin.map "iam [:region] :name [*realm]",
   :action => 'set_own_character', :requirements => {:name => REGEX_CHARNAME, :region => REGEX_REGION, :realm => REGEX_REALM}
 plugin.map "show :nick [*keywords]",
   :action => 'get_user_character', :requirements => {:nick => %r{[^\s]+}}
