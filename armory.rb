@@ -298,6 +298,14 @@ class Mage<Character
 end
 
 class Paladin<Character
+  def schools
+    [:holy]
+  end
+  
+  def caster?
+    true
+  end
+  
   def healer?
     spec == :holy
   end
@@ -747,9 +755,9 @@ class CharacterCache<Cache
   end
   
   def find_character(name, realm, region)    
-    res = items.select { |c| c.name.downcase   == name.downcase &&
-                             c.realm.downcase  == realm.downcase &&
-                             c.region          == region }
+    res = items.select { |c| c.name.downcase  == name.downcase &&
+                             c.realm.downcase == realm.downcase &&
+                             c.region         == region }
     if res.empty?
       false
     else

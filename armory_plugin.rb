@@ -432,7 +432,7 @@ class ArmoryPlugin < Plugin
               if char.spell[:damage].values.uniq.size > 1
                 # spell schools relevant to the class have different damage bonuses
                 # so they are shown individually
-          
+                
                 char.spell[:damage].each do |s,d|
                   str << _(" +%{school}: %{damage}") % {
                     :school => s.to_s.capitalize,
@@ -443,8 +443,7 @@ class ArmoryPlugin < Plugin
                 str << _(" +Spell Damage: %{damage}") % {
                   :damage => char.spell[:damage].values.first
                 }
-              end
-          
+              end  
             end
           
             str << " |"
@@ -458,7 +457,7 @@ class ArmoryPlugin < Plugin
             # spell crit
             str << _(" Crit: %{crit}%") % {
               :crit => char.spell[:crit][:schools].values.first
-            }
+            } if char.spell[:crit][:schools].values.first > 0
           # hunter's ranged stuff
           elsif char.class == Hunter
             str << _(" RAP: %{rap}") % {
