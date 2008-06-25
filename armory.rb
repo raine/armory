@@ -727,6 +727,8 @@ end
 
 module Util
   def self.levenshtein_realm(realm)
+    return realm if REALMS.map {|r| r.downcase}.include?(realm)
+
     shortest = -1
     closest  = ""
 
