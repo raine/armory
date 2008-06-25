@@ -73,7 +73,7 @@ class ArmoryPlugin < Plugin
       m.reply "default realm not set, specify realm pls"
       return
     elsif !params[:realm].empty?
-      realm = params[:realm].to_s
+      realm = Util::levenshtein_realm(params[:realm].to_s)
     else
       realm = @bot.config['armory.realm']
     end
@@ -326,7 +326,7 @@ class ArmoryPlugin < Plugin
         str << _("Rank: %{rank} ") % {:rank => team.rank} unless team.rank.zero?
         str << _("Rating: %{rating} (%{points} pts)") % {
           :rating => team.rating,
-          :points => Utilities::rating_to_points(team.rating)[team.type]
+          :points => ArenaRating::rating_to_points(team.rating)[team.type]
         }
         str << " | "
         str << _("Won: %{won_season}(%{won_week})") % {
@@ -585,7 +585,7 @@ class ArmoryPlugin < Plugin
       m.reply "default realm not set, specify realm"
       return
     elsif !params[:realm].empty?
-      realm = params[:realm].to_s
+      realm = Util::levenshtein_realm(params[:realm].to_s)
     else
       realm = @bot.config['armory.realm']
     end

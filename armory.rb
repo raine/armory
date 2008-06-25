@@ -1,5 +1,6 @@
 require "net/http"
 require "rubygems"
+require "levenshtein"
 require "hpricot"
 require "shorturl"
 require "erb"
@@ -17,6 +18,7 @@ TALENT_TREES = {
 }
 
 BATTLEGROUPS = %w(bloodlust cyclone emberstorm nightfall rampage reckoning retaliation ruin shadowburn stormstrike vindication whirlwind blackout conviction misery todbringer blutdurst raserel verderbnis glutsturm schattenbrand hinterhalt sturmangriff cataclysme férocité vengeance némésis représailles crueldad)
+REALMS       = ["Aegwynn", "Aerie Peak", "Agamaggan", "Aggramar", "Ahn'Qiraj", "Akama", "Al'Akir", "Alexstrasza", "Alleria", "Alonsus", "Altar of Storms", "Alterac Mountains", "Aman'Thul", "Anachronos", "Andorhal", "Anetheron", "Antonidas", "Anub'arak", "Anvilmar", "Arak-arahm", "Arathi", "Arathor", "Archimonde", "Area 52", "Argent Dawn", "Arthas", "Arygos", "Aszune", "Auchindoun", "Azgalor", "Azjol-Nerub", "Azshara", "Azuremyst", "Baelgun", "Balnazzar", "Barthilas", "Black Dragonflight", "Blackhand", "Blackmoore", "Blackrock", "Blackwater Raiders", "Blackwing Lair", "Blade's Edge", "Bladefist", "Bleeding Hollow", "Blood Furnace", "Bloodfeather", "Bloodhoof", "Bloodscalp", "Blutkessel", "Bonechewer", "Boulderfist", "Bronze Dragonflight", "Bronzebeard", "Burning Blade", "Burning Legion", "Burning Steppes", "C'Thun", "Caelestrasz", "Cairne", "Cenarion Circle", "Cenarius", "Chants éternels", "Cho'gall", "Chromaggus", "Coilfang", "Confrérie du Thorium", "Conseil des Ombres", "Crushridge", "Culte de la Rive Noire", "Daggerspine", "Dalaran", "Dalvengyr", "Dark Iron", "Darkmoon Faire", "Darksorrow", "Darkspear", "Darrowmere", "Das Konsortium", "Das Syndikat", "Dath'Remar", "Deathwing", "Defias Brotherhood", "Demon Soul", "Dentarg", "Der Mithrilorden", "Der Rat von Dalaran", "Der abyssische Rat", "Destromath", "Dethecus", "Detheroc", "Die Aldor", "Die Arguswacht", "Die Silberne Hand", "Die Todeskrallen", "Die ewige Wacht", "Doomhammer", "Draenor", "Dragonblight", "Dragonmaw", "Drak'thul", "Draka", "Dreadmaul", "Drek'Thar", "Drenden", "Dun Modr", "Dun Morogh", "Dunemaul", "Durotan", "Duskwood", "Earthen Ring", "Echo Isles", "Echsenkessel", "Eitrigg", "El Exodar", "Eldre'Thalas", "Elune", "Emerald Dream", "Emeriss", "Eonar", "Eredar", "Executus", "Exodar", "Farstriders", "Feathermoon", "Fenris", "Festung der St\303\274rme", "Firetree", "Forscherliga", "Frostmane", "Frostmourne", "Frostwhisper", "Frostwolf", "Garithos", "Garona", "Genjuros", "Ghostlands", "Gilneas", "Gnomeregan", "Gorefiend", "Gorgonnash", "Greymane", "Grim Batol", "Gul'dan", "Gurubashi", "Hakkar", "Haomarush", "Hellfire", "Hellscream", "Hydraxis", "Hyjal", "Icecrown", "Illidan", "Jaedenar", "Jubei'Thos", "Kael'Thas", "Kael'thas", "Kalecgos", "Karazhan", "Kargath", "Kazzak", "Kel'Thuzad", "Khadgar", "Khaz Modan", "Khaz'goroth", "Kil'Jaeden", "Kilrogg", "Kirin Tor", "Kor'gall", "Korgath", "Korialstrasz", "Krag'jin", "Krasus", "Kul Tiras", "Kult der Verdammten", "La Croisade écarlate", "Laughing Skull", "Les Clairvoyants", "Les Sentinelles", "Lethon", "Lightbringer", "Lightning's Blade", "Lightninghoof", "Llane", "Lordaeron", "Los Errantes", "Lothar", "Madmortem", "Madoran", "Maelstrom", "Magtheridon", "Maiev", "Mal'Ganis", "Malfurion", "Malorne", "Malygos", "Mannoroth", "Marécage de Zangar", "Mazrigos", "Medivh", "Minahonda", "Misha", "Molten Core", "Moon Guard", "Moonglade", "Moonrunner", "Mug'thol", "Muradin", "Nagrand", "Nathrezim", "Naxxramas", "Nazgrel", "Nazjatar", "Nefarian", "Neptulon", "Ner'zhul", "Nera'thor", "Nethersturm", "Nordrassil", "Norgannon", "Nozdormu", "Onyxia", "Outland", "Perenolde", "Proudmoore", "Quel'Dorei", "Quel'Thalas", "Ragnaros", "Rajaxx", "Rashgarroth", "Ravencrest", "Ravenholdt", "Rexxar", "Rivendare", "Runetotem", "Sargeras", "Scarlet Crusade", "Scarshield Legion", "Scilla", "Sen'Jin", "Sen'jin", "Sentinels", "Shadow Council", "Shadowmoon", "Shadowsong", "Shandris", "Shattered Halls", "Shattered Hand", "Shattrath", "Shen'dralar", "Shu'Halo", "Silver Hand", "Silvermoon", "Sinstralis", "Sisters of Elune", "Skullcrusher", "Skywall", "Smolderthorn", "Spinebreaker", "Spirestone", "Sporeggar", "Staghelm", "Steamwheedle Cartel", "Stonemaul", "Stormrage", "Stormreaver", "Stormscale", "Sunstrider", "Suramar", "Sylvanas", "Taerar", "Talnivarr", "Tanaris", "Tarren Mill", "Teldrassil", "Temple noir", "Terenas", "Terokkar", "Terrordar", "Thaurissan", "The Forgotten Coast", "The Maelstrom", "The Scryers", "The Sha'tar", "The Underbog", "The Venture Co", "The Venture Co.", "Theradras", "Thorium Brotherhood", "Thrall", "Throk'Feroth", "Thunderhorn", "Thunderlord", "Tichondrius", "Tirion", "Tortheldrin", "Trollbane", "Turalyon", "Twilight's Hammer", "Twisting Nether", "Tyrande", "Uldaman", "Uldum", "Un'Goro", "Undermine", "Ursin", "Uther", "Varimathras", "Vashj", "Vek'lor", "Vek'nilash", "Velen", "Vol'jin", "Warsong", "Whisperwind", "Wildhammer", "Windrunner", "Wrathbringer", "Xavius", "Ysera", "Ysondre", "Zangarmarsh", "Zenedar", "Zirkel des Cenarius", "Zul'jin", "Zuluhed"]
 
 SPELL_SCHOOLS = %w(arcane fire frost holy nature shadow)
 
@@ -104,56 +106,6 @@ GEAR = {
           33767, 33768, 33769, 33770, 33771]
   }
 }
-
-module Utilities  
-  def self.coeff(size)
-    case size
-    when 2
-      return 0.76
-    when 3
-      return 0.88
-    when 5
-      return 1
-    end
-  end
-  
-  def self.rating_to_points(rating)    
-    if rating <= 1500
-      points = 0.22*rating+14
-    else
-      points = (1511.26/(1+1639.28*2.71828**(-0.00412*rating)))
-    end
-    
-    teams = Hash.new
-    
-    [2, 3, 5].each do |s|
-      points_coeff = coeff(s)*points
-      
-      if points_coeff > 0
-        teams[s] = points_coeff.round
-      else
-        teams[s] = 0
-      end
-    end
-    
-    teams
-  end
-  
-  def self.points_to_rating(points)
-    raise "invalid input" if points < 0 || points > 1148
-    
-    teams = Hash.new
-    
-    [2, 3, 5].each do |s|
-      rating = Math.log((1511.26/(1639.28*points/coeff(s)))-(1/1639.28))/(-0.00412)  
-      rating = ((points/coeff(s))-14)/0.22 if rating <= 1500
-      
-      teams[s] = rating.round
-    end
-    
-    teams
-  end
-end
 
 class Character
   attr_accessor :name, :guild, :gear,
@@ -770,5 +722,75 @@ class CharacterCache<Cache
       # character doesn't exist in the cache
       add char
     end
+  end
+end
+
+module Util
+  def self.levenshtein_realm(realm)
+    shortest = -1
+    closest  = ""
+
+    REALMS.each do |r|
+      distance = Levenshtein.distance(realm.downcase, r.downcase)
+
+      return r if distance.zero?
+
+      if distance <= shortest or shortest < 0
+        shortest = distance
+        closest  = r
+      end
+    end
+    
+    closest
+  end
+end
+
+module ArenaRating
+  def self.coeff(size)
+    case size
+    when 2
+      return 0.76
+    when 3
+      return 0.88
+    when 5
+      return 1
+    end
+  end
+  
+  def self.rating_to_points(rating)
+    if rating <= 1500
+      points = 0.22*rating+14
+    else
+      points = (1511.26/(1+1639.28*2.71828**(-0.00412*rating)))
+    end
+    
+    teams = Hash.new
+    
+    [2, 3, 5].each do |s|
+      points_coeff = coeff(s)*points
+      
+      if points_coeff > 0
+        teams[s] = points_coeff.round
+      else
+        teams[s] = 0
+      end
+    end
+    
+    teams
+  end
+  
+  def self.points_to_rating(points)
+    raise "invalid input" if points < 0 || points > 1148
+    
+    teams = Hash.new
+    
+    [2, 3, 5].each do |s|
+      rating = Math.log((1511.26/(1639.28*points/coeff(s)))-(1/1639.28))/(-0.00412)  
+      rating = ((points/coeff(s))-14)/0.22 if rating <= 1500
+      
+      teams[s] = rating.round
+    end
+    
+    teams
   end
 end
