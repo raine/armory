@@ -443,7 +443,14 @@ class ArmoryPlugin < Plugin
                 str << _(" +Spell Damage: %{damage}") % {
                   :damage => char.spell[:damage].values.first
                 }
-              end  
+              end
+              
+              # show healing as well for balance druids
+              if char.class == Druid
+                str << _(" +Healing: %{healing}") % {
+                  :healing => char.spell[:healing]
+                }
+              end              
             end
           
             str << " |"
