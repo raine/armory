@@ -446,7 +446,7 @@ class ArmoryPlugin < Plugin
               end
               
               # show healing as well for balance druids
-              if char.class == Druid
+              if char.class == Druidx
                 str << _(" +Healing: %{healing}") % {
                   :healing => char.spell[:healing]
                 }
@@ -520,14 +520,12 @@ class ArmoryPlugin < Plugin
             str << " | "
           
             gear = []
-          
             prefixes = {:pve => "T", :arena => "S"}
             pieces   = {:pve   => {4=>5,5=>5,6=>8},
-                        :arena => {1=>5,2=>5,3=>5}}
+                        :arena => {1=>5,2=>5,3=>5, 4=>5}}
           
             char.gear.keys.each do |type|
               char.gear[type].each do |tier, amount|
-              
                 gear << _("%{prefix}%{tier}: %{amount}/%{max}") % {
                   :prefix => prefixes[type],
                   :tier   => tier,
@@ -543,7 +541,6 @@ class ArmoryPlugin < Plugin
         
           # PVP
           # arena teams
-        
           str << " |"
           unless char.arena_teams.empty?
           
@@ -618,7 +615,7 @@ class ArmoryPlugin < Plugin
   def get_user_character(m, params)
     if m.server.get_user(params[:nick]).get_botdata[:armory]
       char = m.server.get_user(params[:nick]).get_botdata[:armory]
-      character(char[:name], char[:realm], char[:region], m, params)
+      character(char[:name1], char[:realm], char[:region], m, params)
     else
       m.reply "#{params[:nick]} doesn't have a character set"
     end
