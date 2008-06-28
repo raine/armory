@@ -446,7 +446,7 @@ class ArmoryPlugin < Plugin
               end
               
               # show healing as well for balance druids
-              if char.class == Druidx
+              if char.class == Druid
                 str << _(" +Healing: %{healing}") % {
                   :healing => char.spell[:healing]
                 }
