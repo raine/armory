@@ -31,7 +31,7 @@ class ArmoryPlugin < Plugin
   end
   
   def help(plugin, topic="")
-    keywords = ["2vs2 etc", "talents", "professions"]
+    keywords = ["2vs2 etc", "talents", "professions", "realm"]
     
     case topic
     when 'commands'
@@ -101,7 +101,6 @@ class ArmoryPlugin < Plugin
     @temp[source] = Hash.new unless @temp[source]
     @temp[source][:last] = char
     
-    
     if params and !params[:keywords].empty?
       keyword = parse_keywords(params[:keywords].to_s)
 
@@ -115,7 +114,7 @@ class ArmoryPlugin < Plugin
         else
           m.reply "character doesn't have a team in that bracket"
         end
-      when :talents, :professions
+      when :talents, :professions, :realm
         m.reply output(char, keyword)
       end
     else
@@ -136,6 +135,9 @@ class ArmoryPlugin < Plugin
     when /profession|professions|prof|profs/i
       # professions
       return :professions
+    when /realm/i
+      # realm
+      return :realm
     end
   end
   
@@ -383,6 +385,12 @@ class ArmoryPlugin < Plugin
               str << char.professions.map do |prof|
                 "#{prof[:name].to_s.capitalize} #{prof[:value]}/#{prof[:max]}"
               end.join(", ")
+            when :realm
+              str << _("%{realm} of the %{bg} battlegroup (%{region})") % {
+                :realm => char.realm,
+                :bg => char.battlegroup,
+                :region => char.region.to_s.upcase
+              }
           end
         else
           str << char.title[:prefix]+char.name+char.title[:suffix]
@@ -649,4 +657,4 @@ plugin.map "my [*keywords]",
 plugin.map "iam [:region] :name [*realm]",
   :action => 'set_own_character', :requirements => {:name => REGEX_CHARNAME, :region => REGEX_REGION, :realm => REGEX_REALM}
 plugin.map "show :nick [*keywords]",
-  :action => 'get_user_character', :requirements => {:nick => %r{[^\s]+}}
+  :action => 'get_user_character', :requirements => {:nick => %r{[^\s]+}}  
