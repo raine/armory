@@ -386,7 +386,7 @@ class ArmoryPlugin < Plugin
                 "#{prof[:name].to_s.capitalize} #{prof[:value]}/#{prof[:max]}"
               end.join(", ")
             when :realm
-              str << _("%{realm} of the %{bg} battlegroup (%{region})") % {
+              str << _("%{realm} of the %{bg} Battlegroup (%{region})") % {
                 :realm => char.realm,
                 :bg => char.battlegroup,
                 :region => char.region.to_s.upcase
