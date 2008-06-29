@@ -615,7 +615,7 @@ class ArmoryPlugin < Plugin
   def get_user_character(m, params)
     if m.server.get_user(params[:nick]).get_botdata[:armory]
       char = m.server.get_user(params[:nick]).get_botdata[:armory]
-      character(char[:name1], char[:realm], char[:region], m, params)
+      character(char[:name], char[:realm], char[:region], m, params)
     else
       m.reply "#{params[:nick]} doesn't have a character set"
     end
