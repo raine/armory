@@ -266,7 +266,7 @@ class Paladin<Character
   end
   
   def caster?
-    true
+    spec == :holy
   end
   
   def healer?
