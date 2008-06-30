@@ -31,29 +31,30 @@ class ArmoryPlugin < Plugin
   end
   
   def help(plugin, topic="")
+    url = "http://guaxia.org/jakubot/#"
     keywords = ["2vs2 etc", "talents", "professions", "realm"]
     
     case topic
     when 'commands'
-      "Commands: c(haracter), s(earch), last, l(ucky) | 'help armory <command>' for more info on specific command"
+      "Commands: c(haracter), s(earch), last, l(ucky), me, iam, show | 'help armory <command>' for more info on specific command"
     when 'c'
-      "Usage: c [<region>] <character name> [<realm>] [<keywords>] | Keywords: #{keywords.map { |e| ":"+e }.join(", ")} | Examples: 'c us serennia cho'gall 2on2'"
+      "Usage: c [<region>] <character name> [<realm>] [<keywords>] | Keywords: #{keywords.map { |e| ":"+e }.join(", ")} | Examples: 'c us serennia cho'gall 2on2' | #{url}c"
     when 's'
-      "Usage: s [<region>] <character name> [<keywords>] | Keywords can be attributes like 'tauren', 'gnome', '<Guild>' or a name of a battlegroup | Examples: 's eu athene hunter blood elf', 's punisher orc warrior' | Upon getting search results you can get armory profiles of those characters using '!<result id>'"
+      "Usage: s [<region>] <character name> [<keywords>] | Keywords can be attributes like 'tauren', 'gnome', '<Guild>' or a name of a battlegroup | Examples: 's eu athene hunter blood elf', 's punisher orc warrior' | Upon getting search results you can get armory profiles of those characters using '!<result id>' | #{url}s"
     when 'last'
-      "Usage: last [<keywords>] | Keywords: #{keywords.join(", ")} | Used to access latest armory profile that has been fetched from armory"
+      "Usage: last [<keywords>] | Keywords: #{keywords.join(", ")} | Used to access latest armory profile that has been fetched from armory | #{url}last"
     when 'l'
-      "Usage: l [<region>] <character name> [<search keywords>] [<other keyword>] | Search keywords are same that can be used for normal searches. Other Keywords: #{keywords.map { |e| ":"+e }.join(", ")} | Similar to Google's feeling lucky search, returning profile of the most relevant character | Example: 'l serennia gnome warrior :2vs2' would return 2vs2 team info of gnome warrior named Serennia"
+      "Usage: l [<region>] <character name> [<search keywords>] [<other keyword>] | Search keywords are same that can be used for normal searches. Other Keywords: #{keywords.map { |e| ":"+e }.join(", ")} | Similar to Google's feeling lucky search, returning profile of the most relevant character | Example: 'l serennia gnome warrior :2vs2' would return 2vs2 team info of gnome warrior named Serennia | #{url}l"
     when 'q'
       "Usage: q [<region>] <character name> <bracket> [<keywords>] | Bracket: 2|3|5 | Keywords: see help for 'c'"
     when 'me'
-      "Usage: me [<keywords>] | Keywords: #{keywords.join(", ")} | Used to access your own predefined character"
+      "Usage: me [<keywords>] | Keywords: #{keywords.join(", ")} | Used to access your own predefined character | #{url}me"
     when 'iam'
-      "Usage: iam [<region>] <character name> [<realm>] | Used to set your own predefined character"
+      "Usage: iam [<region>] <character name> [<realm>] | Used to set your own predefined character | #{url}iam"
     when 'show'
-      "Usage: show <nick> [keyword] | Used to access another user's preset character"
+      "Usage: show <nick> [keyword] | Used to access another user's preset character | #{url}show"
     else
-      "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky), q(uick), me (alias:my), iam, show | 'help armory <command>' for more info on specific command | http://guaxia.org/jakubot/ for elaborate help"
+      "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky), q(uick), me (alias:my), iam, show | 'help armory <command>' for more info on specific command or see http://guaxia.org/jakubot/ for more elaborate help"
     end
   end
   
@@ -614,7 +615,7 @@ class ArmoryPlugin < Plugin
   def get_own_character(m, params)
     if m.source.get_botdata[:armory]
       char = m.source.get_botdata[:armory]
-      character(char[:name], char[:realm], char[:region], m, params)
+      character(char[:name], char[:realm], char[:region], m, params, {:show_realm => true})
     else
       m.reply "you don't have a character set, see ´#{@bot.config[:"core.address_prefix"]}help armory iam´ for help"
     end
@@ -623,7 +624,7 @@ class ArmoryPlugin < Plugin
   def get_user_character(m, params)
     if m.server.get_user(params[:nick]).get_botdata[:armory]
       char = m.server.get_user(params[:nick]).get_botdata[:armory]
-      character(char[:name], char[:realm], char[:region], m, params)
+      character(char[:name], char[:realm], char[:region], m, params, {:show_realm => true})
     else
       m.reply "#{params[:nick]} doesn't have a character set"
     end
