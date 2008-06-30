@@ -396,7 +396,7 @@ class ArmoryPlugin < Plugin
         else
           str << char.title[:prefix]+char.name+char.title[:suffix]
           str << ' <'+char.guild+'>' unless char.guild.nil? || char.guild.empty?
-          str << ' ('+char.realm+')' if options && options[:show_realm]
+          str << ' ('+char.realm+'-'+char.region.to_s.upcase+')' if options && options[:show_realm]
         
           str << _(", %{level} %{race} %{class}") % {
             :level => char.level,
