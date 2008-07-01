@@ -50,7 +50,7 @@ class ArmoryPlugin < Plugin
     when 'me'
       "Usage: me [<keywords>] | Keywords: #{keywords.join(", ")} | Used to access your own predefined character | #{url}me"
     when 'iam'
-      "Usage: iam [<region>] <character name> [<realm>] | Used to set your own predefined character | #{url}iam"
+      "Usage: iam [<region>] <character name> [<realm>] | Used to set your own character | After setting a character for yourself, the bot will automatically choose your character's region and/or realm as parameter(s) for any command if those parameters have been left out | #{url}iam"
     when 'show'
       "Usage: show <nick> [keyword] | Used to access another user's preset character | #{url}show"
     else
