@@ -58,27 +58,42 @@ class ArmoryPlugin < Plugin
     end
   end
   
-  def character_action(m, params)
+  def get_realm(m, params)
+    if !params[:realm].empty?
+      Util::levenshtein_realm(params[:realm].to_s)
+    elsif m.source.get_botdata[:armory]
+      m.source.get_botdata[:armory][:realm]
+    elsif @bot.config['armory.realm']
+      @bot.config['armory.realm']
+    end
+  end
+  
+  def get_region(m, params)
+    if params[:region]
+      params[:region].downcase.to_sym
+    elsif m.source.get_botdata[:armory]
+      m.source.get_botdata[:armory][:region]
+    elsif @bot.config['armory.region']
+      @bot.config['armory.region'].to_sym
+    end
+  end
+
+  def character_action(m, params)    
+    realm  = get_realm(m, params)
+    region = get_region(m, params)
+    
+    unless realm
+      m.reply "specify realm"
+      return
+    end
+    
+    unless region
+      m.reply "specify region"
+      return
+    end
+    
     name = params[:name]
-    
-    if params[:region].nil? && !@bot.config['armory.region']
-      m.reply "default region not set, specify region pls"
-      return
-    elsif params[:region]
-      region = params[:region].to_sym
-    else
-      region = @bot.config['armory.region'].to_sym
-    end
-      
-    if params[:realm].empty? && !@bot.config['armory.realm']
-      m.reply "default realm not set, specify realm pls"
-      return
-    elsif !params[:realm].empty?
-      realm = Util::levenshtein_realm(params[:realm].to_s)
-    else
-      realm = @bot.config['armory.realm']
-    end
-    
+  
     character(name, realm, region, m, params)
   end
   
@@ -153,8 +168,10 @@ class ArmoryPlugin < Plugin
   end
   
   def search_action(m, params)
+    region = get_region(m, params)
+    
     begin
-      result = search(params)
+      result = search(region, params)
     rescue => e
       m.reply "error: #{e.message}"
       return
@@ -197,13 +214,7 @@ class ArmoryPlugin < Plugin
     m.reply "<#{result.size}> "+res.join(", ")
   end
   
-  def search(params)
-    if params[:region].nil?
-      region = @bot.config['armory.region'].to_sym
-    else
-      region = params[:region].to_sym
-    end
-    
+  def search(region, params)
     # initial result
     result = Armory.new(region).search(:character, params[:name])
     
@@ -231,7 +242,9 @@ class ArmoryPlugin < Plugin
   
   # search similar to "I'm feeling lucky" in google
   def lucky(m, params)
-    result = search(params)
+    region = get_region(m, params)
+    
+    result = search(region, params)
     
     if result.empty?
       m.reply "out of luck!"
@@ -245,8 +258,8 @@ class ArmoryPlugin < Plugin
   
   def quick(m, params)
     params[:keywords]<<70.to_s
-
-    result = search(params)
+    region = get_region(m, params)
+    result = search(region, params)
     
     if result.empty?
       m.reply "no results"
@@ -575,7 +588,8 @@ class ArmoryPlugin < Plugin
             :lhk => char.pvp[:lifetime_kills]
           } if char.pvp[:lifetime_kills] > 0
           
-          str << _(" | URL: %{url}") % {
+          # armory url
+          str << _(" | %{url}") % {
             :url => char.url
           }
           
@@ -585,23 +599,8 @@ class ArmoryPlugin < Plugin
   end
   
   def set_own_character(m, params)
-    if params[:region].nil? && !@bot.config['armory.region']
-      m.reply "default region not set, specify region"
-      return
-    elsif params[:region]
-      region = params[:region].to_sym
-    else
-      region = @bot.config['armory.region'].to_sym
-    end
-      
-    if params[:realm].empty? && !@bot.config['armory.realm']
-      m.reply "default realm not set, specify realm"
-      return
-    elsif !params[:realm].empty?
-      realm = Util::levenshtein_realm(params[:realm].to_s)
-    else
-      realm = @bot.config['armory.realm']
-    end
+    realm  = get_realm(m, params)
+    region = get_region(m, params)
     
     name = params[:name]
     
@@ -609,7 +608,10 @@ class ArmoryPlugin < Plugin
     m.source.set_botdata('armory.realm',  realm)
     m.source.set_botdata('armory.region', region)
     
-    m.reply "#{m.source.nick} is now #{name.capitalize} of the #{realm.cew} (#{region.to_s.upcase})"
+    m.notify "You are now #{name.capitalize} of the #{realm.cew} (#{region.to_s.upcase})"+
+             " | From now on when using the bot, you don't have to enter"+
+             " region and/or realm when looking for things on your character's realm,"+
+             " for example you could just do ',c #{name.downcase}'."
   end
   
   def get_own_character(m, params)
@@ -617,7 +619,7 @@ class ArmoryPlugin < Plugin
       char = m.source.get_botdata[:armory]
       character(char[:name], char[:realm], char[:region], m, params, {:show_realm => true})
     else
-      m.reply "you don't have a character set, see ´#{@bot.config[:"core.address_prefix"]}help armory iam´ for help"
+      m.notify "You don't have a character set, see ´#{@bot.config[:"core.address_prefix"]}help armory iam´ for help"
     end
   end
   
