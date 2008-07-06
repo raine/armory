@@ -93,8 +93,14 @@ class ArmoryPlugin < Plugin
     end
     
     name = params[:name]
-  
-    character(name, realm, region, m, params)
+    
+    begin
+      character(name, realm, region, m, params)
+    rescue NoCharacterError => e
+       m.reply "error: #{e.message} on #{realm.cew}"
+    rescue => e
+       m.reply "error: #{e.message}"
+    end
   end
   
   def character(name, realm, region, m, params=nil, options=nil)
@@ -103,12 +109,7 @@ class ArmoryPlugin < Plugin
     if @bot.config['armory.cache'] && cached = @cache.find_character(name, realm, region)
       char = cached
     else
-      begin
-        char = Armory.new(region).character(name, realm)
-      rescue => e
-        m.reply "error: #{e.message}"
-      end
-      
+      char = Armory.new(region).character(name, realm)
       @cache.save_character(char)
     end
     
@@ -563,7 +564,9 @@ class ArmoryPlugin < Plugin
         
           # PVP
           # arena teams
-          str << " |"
+          
+          pvp_substr = ""
+          
           unless char.arena_teams.empty?
           
             teams = [2, 3, 5].map do |s|
@@ -574,19 +577,21 @@ class ArmoryPlugin < Plugin
               end
             end.join("/")
           
-            str << _(" Arena: %{teams}") % {
+            pvp_substr << _(" Arena: %{teams}") % {
               :teams => teams
             }
           
           end
         
-          str << _(" Points: %{ap}") % {
+          pvp_substr << _(" Points: %{ap}") % {
             :ap => char.pvp[:arena_points]
           } if char.pvp[:arena_points] > 0
         
-          str << _(" LHKs: %{lhk}") % {
+          pvp_substr << _(" LHKs: %{lhk}") % {
             :lhk => char.pvp[:lifetime_kills]
           } if char.pvp[:lifetime_kills] > 0
+          
+          str << " |" + pvp_substr unless pvp_substr.empty?
           
           # armory url
           str << _(" | %{url}") % {
@@ -611,7 +616,7 @@ class ArmoryPlugin < Plugin
     m.notify "You are now #{name.capitalize} of the #{realm.cew} (#{region.to_s.upcase})"+
              " | From now on when using the bot, you don't have to enter"+
              " region and/or realm when looking for things on your character's realm,"+
-             " for example you could just do ',c #{name.downcase}'."
+             " for example, you could just do ',c #{name.downcase}'."
   end
   
   def get_own_character(m, params)
@@ -638,8 +643,8 @@ class ArmoryPlugin < Plugin
 end
 
 REGEX_REGION   = %r{eu|us}i
-REGEX_CHARNAME = %r{^[^-\d\s]+$}u
-REGEX_REALM    = %r{['A-Za-z\-\s]+}
+REGEX_CHARNAME = %r{^[^-\d\s]+$}
+REGEX_REALM    = %r{^[^-]['A-Za-z\-\s]+}
 
 plugin = ArmoryPlugin.new
 
@@ -650,7 +655,7 @@ plugin.map "c [:region] :name [*realm] [*keywords]",
 plugin.map "last [*keywords]",
   :action => 'last'
 plugin.map "l [:region] :name [*keywords] [*keywords2]",
-  :action => 'lucky', :requirements => {:name => REGEX_CHARNAME, :region => REGEX_REGION, :keywords2 => %r{^:\w+$}}          
+  :action => 'lucky', :requirements => {:name => REGEX_CHARNAME, :region => REGEX_REGION, :keywords2 => %r{^-\w+$}}          
 plugin.map "q [:region] :name :bracket [*keywords]",
   :action => 'quick', :requirements => {:name => REGEX_CHARNAME, :region => REGEX_REGION, :bracket => %r{2|3|5}}
 plugin.map "me [*keywords]",

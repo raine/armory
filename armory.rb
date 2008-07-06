@@ -325,6 +325,11 @@ class Warrior<Character
   end
 end
 
+class NoCharacterError < StandardError
+end
+
+class BelowMinLevelError < StandardError
+end
 
 class Armory
   HEADERS = {'User-Agent' => "Mozilla/5.0 (Windows; U; Windows NT 5.1; fi; rv:1.8.1.8) Gecko/20071008 Firefox/2.0.0.8\r\n"}
@@ -347,7 +352,6 @@ class Armory
     
   def start_session(reg)
     http = Net::HTTP.new(REGIONS[reg])
-    http.read_timeout = 10
     http.read_timeout = 10
     
     return http
@@ -391,9 +395,9 @@ class Armory
         if character_info["errCode"]
           case character_info["errCode"]
           when "noCharacter"
-            raise "character not found"
+            raise NoCharacterError, "character not found"
           when "belowMinLevel"
-            raise "character is below minimum level"
+            raise BelowMinLevelError, "character below minimum level"
           else
             raise character_info["errCode"]
           end
