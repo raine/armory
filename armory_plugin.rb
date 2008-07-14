@@ -93,14 +93,7 @@ class ArmoryPlugin < Plugin
     end
     
     name = params[:name]
-    
-    begin
-      character(name, realm, region, m, params)
-    rescue NoCharacterError => e
-       m.reply "error: #{e.message} on #{realm.cew}"
-    rescue => e
-       m.reply "error: #{e.message}"
-    end
+    character(name, realm, region, m, params)
   end
   
   def character(name, realm, region, m, params=nil, options=nil)
@@ -109,7 +102,14 @@ class ArmoryPlugin < Plugin
     if @bot.config['armory.cache'] && cached = @cache.find_character(name, realm, region)
       char = cached
     else
-      char = Armory.new(region).character(name, realm)
+      begin
+         char = Armory.new(region).character(name, realm)
+      rescue NoCharacterError => e
+         m.reply "error: #{e.message} on #{realm.cew}"
+      rescue => e
+         m.reply "error: #{e.message}"
+      end
+      
       @cache.save_character(char)
     end
     
