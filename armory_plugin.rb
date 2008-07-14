@@ -426,15 +426,15 @@ class ArmoryPlugin < Plugin
 
           # hp and mana
           str << _(" | H: %{health}") % {
-            :health => colorize(char.stats[:health], :red)
+            :health => char.stats[:health]
           }
         
           str << _(" M: %{mana}") % {
-            :mana => colorize(char.stats[:mana], :blue)
+            :mana => char.stats[:mana]
           } if char.stats[:mana]
         
           str << _(" Resilience: %{resi} (-%{hit}%)") % {
-            :resi => colorize(char.defenses[:resilience][:value], :yellow),
+            :resi => char.defenses[:resilience][:value],
             :hit => char.defenses[:resilience][:hit_percent]
           } if char.defenses[:resilience][:value] > 0
         
@@ -665,4 +665,4 @@ plugin.map "my [*keywords]",
 plugin.map "iam [:region] :name [*realm]",
   :action => 'set_own_character', :requirements => {:name => REGEX_CHARNAME, :region => REGEX_REGION, :realm => REGEX_REALM}
 plugin.map "show :nick [*keywords]",
-  :action => 'get_user_character', :requirements => {:nick => %r{[^\s]+}}  
+  :action => 'get_user_character', :requirements => {:nick => %r{[^\s]+}}
