@@ -103,11 +103,13 @@ class ArmoryPlugin < Plugin
       char = cached
     else
       begin
-         char = Armory.new(region).character(name, realm)
+        char = Armory.new(region).character(name, realm)
+      rescue Timeout::Error => e
+        m.reply "error: timeout :("
       rescue NoCharacterError => e
-         m.reply "error: #{e.message} on #{realm.cew}"
+        m.reply "error: #{e.message} on #{realm.cew}"
       rescue => e
-         m.reply "error: #{e.message}"
+        m.reply "error: #{e.message}"
       end
       
       @cache.save_character(char)
