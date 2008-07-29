@@ -1,8 +1,18 @@
-# TO DO:
-# 
-#
-
 require '~/armory'
+
+class ::Irc::UserMessage
+  def reply(string, silent=false, options={})
+    if @channel && @bot.plugins['armory'].registry[@channel.downcase] && silent
+      notify string
+    else
+      if @bot.config['core.reply_with_nick'] and not string =~ /(?:^|\W)#{Regexp.escape(@source.to_s)}(?:$|\W)/
+        return nickreply(string, options)
+      end
+      plainreply(string, options)
+    end
+  end
+end
+
 
 class ::String
   def cew
@@ -83,17 +93,16 @@ class ArmoryPlugin < Plugin
     region = get_region(m, params)
     
     unless realm
-      m.reply "specify realm"
+      m.reply "specify realm", true
       return
     end
     
     unless region
-      m.reply "specify region"
+      m.reply "specify region", true
       return
     end
     
-    name = params[:name]
-    character(name, realm, region, m, params)
+    m.reply character(params[:name], realm, region, m, params), true
   end
   
   def character(name, realm, region, m, params=nil, options=nil)
@@ -105,11 +114,14 @@ class ArmoryPlugin < Plugin
       begin
         char = Armory.new(region).character(name, realm)
       rescue Timeout::Error => e
-        m.reply "error: timeout :("
+        m.reply "error: timeout :(", true
+        return
       rescue NoCharacterError => e
-        m.reply "error: #{e.message} on #{realm.cew}"
+        m.reply "error: #{e.message} on #{realm.cew}", true
+        return
       rescue => e
-        m.reply "error: #{e.message}"
+        m.reply "error: #{e.message}", true
+        return
       end
       
       @cache.save_character(char)
@@ -129,15 +141,15 @@ class ArmoryPlugin < Plugin
     
         if char.arena_teams[bracket]
           @temp[source][:arena_team] = char.arena_teams[bracket].members            
-          m.reply output(char.arena_teams[bracket])
+          return output(char.arena_teams[bracket])
         else
-          m.reply "character doesn't have a team in that bracket"
+          return "character doesn't have a team in that bracket"
         end
       when :talents, :professions, :realm
-        m.reply output(char, keyword)
+        return output(char, keyword)
       end
     else
-      m.reply output(char, nil, options)
+      return output(char, nil, options)
     end
   end
   
@@ -167,7 +179,7 @@ class ArmoryPlugin < Plugin
     
     char = @temp[source][:last]
     
-    character(char.name, char.realm, char.region, m, params)
+    m.reply character(char.name, char.realm, char.region, m, params), true
   end
   
   def search_action(m, params)
@@ -176,12 +188,12 @@ class ArmoryPlugin < Plugin
     begin
       result = search(region, params)
     rescue => e
-      m.reply "error: #{e.message}"
+      m.reply "error: #{e.message}", true
       return
     end
       
     if result.empty?
-      m.reply "no results"
+      m.reply "no results", true
       return
     end
     
@@ -214,7 +226,7 @@ class ArmoryPlugin < Plugin
       res << str
     end
     
-    m.reply "<#{result.size}> "+res.join(", ")
+    m.reply "<#{result.size}> "+res.join(", "), true
   end
   
   def search(region, params)
@@ -250,13 +262,13 @@ class ArmoryPlugin < Plugin
     result = search(region, params)
     
     if result.empty?
-      m.reply "out of luck!"
+      m.reply "out of luck!", true
       return
     end
     
     first = result.first
     
-    character(first.name, first.realm, first.region, m, {:keywords => params[:keywords2]}, {:show_realm => true})
+    m.reply character(first.name, first.realm, first.region, m, {:keywords => params[:keywords2]}, {:show_realm => true}), true
   end
   
   def quick(m, params)
@@ -293,7 +305,7 @@ class ArmoryPlugin < Plugin
       m.reply output(team)
       
       team.members.each do |member|
-        character(member.name, member.realm, member.region, m)
+        m.reply character(member.name, member.realm, member.region, m)
       end
     else
       m.reply "character found doesn't have team in that bracket"
@@ -314,9 +326,9 @@ class ArmoryPlugin < Plugin
       searched_char = @temp[source][:search][temp_id-1]
       
       if searched_char
-        character(searched_char.name,
-                  searched_char.realm,
-                  searched_char.region, m, params, {:show_realm => true})
+        m.reply character(searched_char.name,
+                          searched_char.realm,
+                          searched_char.region, m, params, {:show_realm => true}), true
       end
     when /%/ # arena team member prefix
       return unless @temp[source][:arena_team]
@@ -324,9 +336,9 @@ class ArmoryPlugin < Plugin
       team_member = @temp[source][:arena_team][temp_id-1]
       
       if team_member
-        character(team_member.name,
-                  team_member.realm,
-                  team_member.region, m, params)
+        m.reply character(team_member.name,
+                          team_member.realm,
+                          team_member.region, m, params), true
       end
     end
   end
@@ -624,7 +636,7 @@ class ArmoryPlugin < Plugin
   def get_own_character(m, params)
     if m.source.get_botdata[:armory]
       char = m.source.get_botdata[:armory]
-      character(char[:name], char[:realm], char[:region], m, params, {:show_realm => true})
+      m.reply character(char[:name], char[:realm], char[:region], m, params, {:show_realm => true})
     else
       m.notify "You don't have a character set, see ´#{@bot.config[:"core.address_prefix"]}help armory iam´ for help"
     end
@@ -633,9 +645,21 @@ class ArmoryPlugin < Plugin
   def get_user_character(m, params)
     if m.server.get_user(params[:nick]).get_botdata[:armory]
       char = m.server.get_user(params[:nick]).get_botdata[:armory]
-      character(char[:name], char[:realm], char[:region], m, params, {:show_realm => true})
+      m.reply character(char[:name], char[:realm], char[:region], m, params, {:show_realm => true})
     else
-      m.reply "#{params[:nick]} doesn't have a character set"
+      m.reply "#{params[:nick]} doesn't have a character set", true
+    end
+  end
+  
+  def toggle_silent(m, params)
+    return unless m.channel && m.channel.has_op?(m.source.downcase) || m.source.botuser.owner?
+    
+    if @registry[m.channel.downcase].nil? || @registry[m.channel.downcase]
+      @registry[m.channel.downcase] = false
+      m.reply "silent mode disabled"
+    else
+      @registry[m.channel.downcase] = true
+      m.reply "silent mode enabled"
     end
   end
 
@@ -668,3 +692,5 @@ plugin.map "iam [:region] :name [*realm]",
   :action => 'set_own_character', :requirements => {:name => REGEX_CHARNAME, :region => REGEX_REGION, :realm => REGEX_REALM}
 plugin.map "show :nick [*keywords]",
   :action => 'get_user_character', :requirements => {:nick => %r{[^\s]+}}
+plugin.map "silent",
+  :action => 'toggle_silent'
