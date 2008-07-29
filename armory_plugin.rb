@@ -654,7 +654,7 @@ class ArmoryPlugin < Plugin
   def toggle_silent(m, params)
     return unless m.channel && m.channel.has_op?(m.source.downcase) || m.source.botuser.owner?
     
-    if @registry[m.channel.downcase].nil? || @registry[m.channel.downcase]
+    if @registry[m.channel.downcase]
       @registry[m.channel.downcase] = false
       m.reply "silent mode disabled"
     else
