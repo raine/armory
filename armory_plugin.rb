@@ -13,6 +13,20 @@ class ::Irc::UserMessage
   end
 end
 
+class ::Irc::Bot
+  def help(topic=nil)
+    topic = nil if topic == ""
+    case topic
+    when nil
+      helpstr = "topics: rating, armory | ´help <topic>´ for more info -- http://guaxia.org/jakubot/ is a good read"
+    else
+      unless(helpstr = @plugins.help(topic))
+        helpstr = _("no help for topic %{topic}") % { :topic => topic }
+      end
+    end
+    return helpstr
+  end
+end
 
 class ::String
   def cew
