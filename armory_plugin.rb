@@ -262,6 +262,7 @@ class ArmoryPlugin < Plugin
       keywords[:guild]       = $1 if str =~ /<([A-Za-z\-\s]+)>/i
       keywords[:level]       = $1 if str =~ /(\d{2})/
       keywords[:battlegroup] = $1 if str =~ /(#{BATTLEGROUPS.join("|")})/i
+      keywords[:gender]      = $1 if str =~ /(male|female)/i
       
       # remove entries that don't match the given keywords
       keywords.each do |keyword, value|

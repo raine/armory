@@ -206,6 +206,7 @@ class Character
       char.guild = hash["guildName"]
     end
     
+    char.gender      = hash["gender"].downcase.to_sym
     char.level       = hash["level"].to_i if hash["level"]
     char.race        = hash["race"].to_sym
     char.realm       = hash["realm"] if hash["realm"]
