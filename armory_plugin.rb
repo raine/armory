@@ -159,7 +159,7 @@ class ArmoryPlugin < Plugin
         else
           return "character doesn't have a team in that bracket"
         end
-      when :talents, :professions, :realm
+      when :talents, :professions, :realm, :url
         return output(char, keyword)
       end
     else
@@ -183,6 +183,9 @@ class ArmoryPlugin < Plugin
     when /realm/i
       # realm
       return :realm
+    when /url/i
+      # armory url
+      return :url
     end
   end
   
@@ -433,6 +436,10 @@ class ArmoryPlugin < Plugin
                 :realm => char.realm,
                 :bg => char.battlegroup,
                 :region => char.region.to_s.upcase
+              }
+            when :url
+              str << _("%{url}") % {
+                :url => char.url
               }
           end
         else
