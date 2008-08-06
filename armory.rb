@@ -3,6 +3,7 @@ require "rubygems"
 require "levenshtein"
 require "hpricot"
 require "shorturl"
+require "date"
 require "erb"
 
 TALENT_TREES = {
@@ -127,7 +128,8 @@ class Character
                 :stats, :spell, :resistances,
                 :melee, :ranged, :defenses,
                 :arena_teams, :arena_games_total, :arena_games_won,
-                :arena_games_lost, :fetched_at, :items
+                :arena_games_lost, :fetched_at, :items,
+                :last_online
                 
   def initialize
     @professions = Array.new
@@ -420,6 +422,7 @@ class Armory
         char.gender      = char_hash["gender"].downcase.to_sym
         char.realm       = char_hash["realm"]
         char.battlegroup = char_hash["battleGroup"]
+        char.last_online = Date.parse(char_hash["lastModified"])
         
         char.title = {:prefix => char_hash["prefix"],
                       :suffix => char_hash["suffix"]}

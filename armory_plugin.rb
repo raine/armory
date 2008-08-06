@@ -146,6 +146,8 @@ class ArmoryPlugin < Plugin
     @temp[source] = Hash.new unless @temp[source]
     @temp[source][:last] = char
     
+    pp params
+    
     if params and !params[:keywords].empty?
       keyword = parse_keywords(params[:keywords].to_s)
 
@@ -159,7 +161,7 @@ class ArmoryPlugin < Plugin
         else
           return "character doesn't have a team in that bracket"
         end
-      when :talents, :professions, :realm, :url
+      when :talents, :professions, :realm, :url, :online
         return output(char, keyword)
       end
     else
@@ -168,7 +170,8 @@ class ArmoryPlugin < Plugin
   end
   
   def parse_keywords(keywords)
-    keywords.gsub!(/:/,"")
+    pp keywords
+    keywords.gsub!(/-/,"")
     
     case keywords  
     when /(2(?:on|v|vs)2|3(?:on|v|vs)3|5(?:on|v|vs)5)/i
@@ -186,6 +189,9 @@ class ArmoryPlugin < Plugin
     when /url/i
       # armory url
       return :url
+    when /online/i
+      # last online
+      return :online
     end
   end
   
@@ -442,6 +448,10 @@ class ArmoryPlugin < Plugin
               str << _("%{url}") % {
                 :url => char.url
               }
+            when :online
+              str << _("Last online: %{online}") % {
+                :online => char.last_online.strftime
+              }
           end
         else
           str << char.title[:prefix]+char.name+char.title[:suffix]
@@ -692,7 +702,7 @@ end
 
 REGEX_REGION   = %r{eu|us}i
 REGEX_CHARNAME = %r{^[^-\d\s]+$}
-REGEX_REALM    = %r{^[^-]['A-Za-z\-\s]+}
+REGEX_REALM    = %r{([a-z]+[-a-z']+\s*)+}i
 
 plugin = ArmoryPlugin.new
 
