@@ -127,11 +127,14 @@ class ArmoryPlugin < Plugin
     else
       begin
         char = Armory.new(region).character(name, realm)
-      rescue Timeout::Error => e
+      rescue Timeout::Error
         m.reply "error: timeout :(", true
         return
       rescue NoCharacterError => e
         m.reply "error: #{e.message} on #{realm.cew}", true
+        return
+      rescue Errno::ECONNREFUSED
+        m.reply "connection refused", true
         return
       rescue => e
         m.reply "error: #{e.message}", true
@@ -208,13 +211,8 @@ class ArmoryPlugin < Plugin
   def search_action(m, params)
     region = get_region(m, params)
     
-    begin
-      result = search(region, params)
-    rescue => e
-      m.reply "error: #{e.message}", true
-      return
-    end
-      
+    result = search(region, params, m)
+            
     if result.empty?
       m.reply "no results", true
       return
@@ -252,9 +250,20 @@ class ArmoryPlugin < Plugin
     m.reply "<#{result.size}> "+res.join(", "), true
   end
   
-  def search(region, params)
-    # initial result
-    result = Armory.new(region).search(:character, params[:name])
+  def search(region, params, m)
+    begin
+      # initial result
+      result = Armory.new(region).search(:character, params[:name])
+    rescue Timeout::Error
+      m.reply "error: timeout :(", true
+      return
+    rescue Errno::ECONNREFUSED
+      m.reply "error: connection refused", true
+      return
+    rescue => e
+      m.reply "error: #{e.message}", true
+      return
+    end
     
     # check for additional keywords like race or class
     unless params[:keywords].empty?
@@ -282,8 +291,7 @@ class ArmoryPlugin < Plugin
   # search similar to "I'm feeling lucky" in google
   def lucky(m, params)
     region = get_region(m, params)
-    
-    result = search(region, params)
+    result = search(region, params, m)
     
     if result.empty?
       m.reply "out of luck!", true
@@ -298,7 +306,7 @@ class ArmoryPlugin < Plugin
   def quick(m, params)
     params[:keywords]<<70.to_s
     region = get_region(m, params)
-    result = search(region, params)
+    result = search(region, params, m)
     
     if result.empty?
       m.reply "no results"
@@ -450,7 +458,7 @@ class ArmoryPlugin < Plugin
               }
             when :online
               str << _("Last online: %{online}") % {
-                :online => char.last_online.strftime
+                :online => char.last_online.strftime("%B %d, %Y")
               }
           end
         else
