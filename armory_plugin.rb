@@ -149,8 +149,6 @@ class ArmoryPlugin < Plugin
     @temp[source] = Hash.new unless @temp[source]
     @temp[source][:last] = char
     
-    pp params
-    
     if params and !params[:keywords].empty?
       keyword = parse_keywords(params[:keywords].to_s)
 
@@ -173,7 +171,6 @@ class ArmoryPlugin < Plugin
   end
   
   def parse_keywords(keywords)
-    pp keywords
     keywords.gsub!(/-/,"")
     
     case keywords  
@@ -678,7 +675,7 @@ class ArmoryPlugin < Plugin
       char = m.source.get_botdata[:armory]
       m.reply character(char[:name], char[:realm], char[:region], m, params, {:show_realm => true})
     else
-      m.notify "You don't have a character set, see ´#{@bot.config[:"core.address_prefix"]}help armory iam´ for help"
+      m.notify "You don't have a character set, this can be corrected with ´#{@bot.config[:"core.address_prefix"]}iam <region (eu|us)> <name> <realm>´ for help"
     end
   end
   
