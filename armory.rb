@@ -129,7 +129,7 @@ class Character
                 :melee, :ranged, :defenses,
                 :arena_teams, :arena_games_total, :arena_games_won,
                 :arena_games_lost, :fetched_at, :items,
-                :last_online
+                :last_online, :haste
                 
   def initialize
     @professions = Array.new
@@ -177,8 +177,8 @@ class Character
   end
   
   def url
-    @armory_url = ShortURL::shorten('http://'+Armory::REGIONS[@region]+
-                  '/character-sheet.xml?r='+ERB::Util.url_encode(@realm)+'&n='+@name, :fyad) if @armory_url.nil?
+    @armory_url ||= ShortURL::shorten('http://'+Armory::REGIONS[@region]+
+                  '/character-sheet.xml?r='+ERB::Util.url_encode(@realm)+'&n='+@name, :fyad)
     @armory_url
   end
   
@@ -526,6 +526,10 @@ class Armory
 
         healing = (spell_xml/:bonusHealing).first.attributes
         char.spell[:healing] = healing["value"].to_i
+        
+        haste = (spell_xml/:hasteRating).first.attributes
+        char.haste = {:rating  => haste["hasteRating"].to_i,
+                      :percent => haste["hastePercent"].to_f}
         
         hit_rating = (spell_xml/:hitRating).first.attributes
         char.spell[:hit_rating] = {:value => hit_rating["value"].to_i,

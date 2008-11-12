@@ -587,6 +587,11 @@ class ArmoryPlugin < Plugin
               :percent => char.melee[:hit_rating][:inc_percent],
             } if char.melee[:hit_rating][:value] > 0
           end
+          
+          str << _(" Haste: %{rating} (+%{percent}%)") % {
+            :rating  => char.haste[:rating],
+            :percent => char.haste[:percent],
+          } if char.haste[:rating] > 0
         
           # special gear
         
