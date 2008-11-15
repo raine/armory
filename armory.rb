@@ -15,7 +15,8 @@ TALENT_TREES = {
   :rogue   => [:assasination, :combat, :subtlety],
   :shaman  => [:elemental, :enhancement, :restoration],
   :warlock => [:affliction, :demonology, :destruction],
-  :warrior => [:arms, :fury, :protection]
+  :warrior => [:arms, :fury, :protection],
+  :deathknight => [:blood, :frost, :unholy]
 }
 
 BATTLEGROUPS = %w(bloodlust cyclone emberstorm nightfall rampage reckoning retaliation ruin shadowburn stormstrike vindication whirlwind blackout conviction misery todbringer blutdurst raserel verderbnis glutsturm schattenbrand hinterhalt sturmangriff cataclysme férocité vengeance némésis représailles crueldad)
@@ -27,7 +28,7 @@ RACES = ["tauren", "undead", "troll", "blood elf", "orc",
          "human", "night elf", "gnome", "dwarf", "draenei"]
          
 CLASSES = ["rogue", "shaman", "warlock", "mage", "druid",
-           "warrior", "hunter", "priest", "paladin"]
+           "warrior", "hunter", "priest", "paladin", "death knight"]
            
 GEAR = {
   :pve => {
@@ -312,6 +313,9 @@ class Shaman<Character
   end
 end
 
+class DeathKnight<Character
+end
+
 class Warlock<Character
   def schools
     [:fire, :shadow]
@@ -410,7 +414,7 @@ class Armory
         
         char_class = char_hash["class"].downcase.to_sym
         
-        char = Object.const_get(char_class.to_s.capitalize).new
+        char = Object.const_get(char_hash["class"].tr(' ', '')).new
         
         char.region = @region
         char.fetched_at = Time.now
@@ -633,7 +637,7 @@ class Armory
         characters_xml = (xml/:armorySearch/:searchResults/:characters/:character)
         
         characters_xml.each do |e|
-          characters << Object.const_get(e.attributes["class"])::parse_hash(e.attributes)
+          characters << Object.const_get(e.attributes["class"].tr(' ',''))::parse_hash(e.attributes)
         end
         
         characters.map { |c| c.region = @region }
