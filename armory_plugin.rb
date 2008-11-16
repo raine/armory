@@ -441,7 +441,7 @@ class ArmoryPlugin < Plugin
                 trees = char.talents.map {|t| t[:points]}.join("/")
                 str << _("%{spec} %{class}, %{trees} -- %{url}") % {
                   :spec  => char.spec.to_s.cew,
-                  :class => char.class,
+                  :class => char.to_s,
                   :trees => trees,
                   :url   => char.talents_exact
                 }
