@@ -232,7 +232,7 @@ class ArmoryPlugin < Plugin
       str << _(" %{level} %{race} %{class}") % {
         :level => char.level,
         :race  => char.race,
-        :class => char.class.to_s
+        :class => char.to_s
       }
       str << _(" <%{guild}>") % {
         :guild => char.guild
@@ -412,7 +412,7 @@ class ArmoryPlugin < Plugin
             member_str << _("[%{b}%%{id}%{b}] ") % { :id => i+1, :b => Bold }
             member_str << _("%{race} %{class} %{name}") % {
               :race  => m.race,
-              :class => m.class.to_s,
+              :class => m.to_s,
               :name  => m.name
             }
             
