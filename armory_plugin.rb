@@ -276,6 +276,9 @@ class ArmoryPlugin < Plugin
       keywords[:battlegroup] = $1 if str =~ /(#{BATTLEGROUPS.join("|")})/i
       keywords[:gender]      = $1 if str =~ /(male|female)/i
       
+      # death knight -> deathknight
+      keywords[:class].gsub!(/\s/, "") if keywords[:class]
+      
       # remove entries that don't match the given keywords
       keywords.each do |keyword, value|
         result.delete_if { |c| c.send(keyword.to_s).to_s.downcase != value.downcase }
