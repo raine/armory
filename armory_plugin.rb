@@ -432,13 +432,17 @@ class ArmoryPlugin < Plugin
         if what
           case what
             when :talents
-              trees = char.talents.map {|t| t[:points]}.join("/")
-              str << _("%{spec} %{class}, %{trees} -- %{url}") % {
-                :spec  => char.spec.to_s.cew,
-                :class => char.class,
-                :trees => trees,
-                :url   => char.talents_exact
-              }
+              if char.untalented?
+                str << "Untalented character"
+              else
+                trees = char.talents.map {|t| t[:points]}.join("/")
+                str << _("%{spec} %{class}, %{trees} -- %{url}") % {
+                  :spec  => char.spec.to_s.cew,
+                  :class => char.class,
+                  :trees => trees,
+                  :url   => char.talents_exact
+                }
+              end
             when :professions
               str << char.professions.map do |prof|
                 "#{prof[:name].to_s.capitalize} #{prof[:value]}/#{prof[:max]}"
@@ -466,14 +470,18 @@ class ArmoryPlugin < Plugin
           str << _(", %{level} %{race} %{class}") % {
             :level => char.level,
             :race  => char.race.to_s.cew,
-            :class => char.class.to_s
+            :class => char.to_s
           }
-        
-          trees = char.talents.map {|t| t[:points]}.join("/")
-          str << _(" (%{talents}, %{spec})") % {
-            :talents => trees,
-            :spec => char.spec.to_s.cew
-          }
+          
+          if char.untalented?
+            str < " (Untalented)"
+          else
+            trees = char.talents.map {|t| t[:points]}.join("/")
+            str << _(" (%{talents}, %{spec})") % {
+              :talents => trees,
+              :spec => char.spec.to_s.cew
+            }
+          end
 
           # hp and mana
           str << _(" | H: %{health}") % {

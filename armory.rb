@@ -6,19 +6,6 @@ require "shorturl"
 require "date"
 require "erb"
 
-TALENT_TREES = {
-  :druid   => [:balance, :feral, :restoration],
-  :hunter  => [:"beast mastery", :marksmanship, :survival],
-  :mage    => [:arcane, :fire, :frost],
-  :paladin => [:holy, :protection, :retribution],
-  :priest  => [:discipline, :holy, :shadow],
-  :rogue   => [:assasination, :combat, :subtlety],
-  :shaman  => [:elemental, :enhancement, :restoration],
-  :warlock => [:affliction, :demonology, :destruction],
-  :warrior => [:arms, :fury, :protection],
-  :deathknight => [:blood, :frost, :unholy]
-}
-
 BATTLEGROUPS = %w(bloodlust cyclone emberstorm nightfall rampage reckoning retaliation ruin shadowburn stormstrike vindication whirlwind blackout conviction misery todbringer blutdurst raserel verderbnis glutsturm schattenbrand hinterhalt sturmangriff cataclysme férocité vengeance némésis représailles crueldad)
 REALMS       = ["Aegwynn", "Aerie Peak", "Agamaggan", "Aggramar", "Ahn'Qiraj", "Akama", "Al'Akir", "Alexstrasza", "Alleria", "Alonsus", "Altar of Storms", "Alterac Mountains", "Aman'Thul", "Anachronos", "Andorhal", "Anetheron", "Antonidas", "Anub'arak", "Anvilmar", "Arak-arahm", "Arathi", "Arathor", "Archimonde", "Area 52", "Argent Dawn", "Arthas", "Arygos", "Aszune", "Auchindoun", "Azgalor", "Azjol-Nerub", "Azshara", "Azuremyst", "Baelgun", "Balnazzar", "Barthilas", "Black Dragonflight", "Blackhand", "Blackmoore", "Blackrock", "Blackwater Raiders", "Blackwing Lair", "Blade's Edge", "Bladefist", "Bleeding Hollow", "Blood Furnace", "Bloodfeather", "Bloodhoof", "Bloodscalp", "Blutkessel", "Bonechewer", "Boulderfist", "Bronze Dragonflight", "Bronzebeard", "Burning Blade", "Burning Legion", "Burning Steppes", "C'Thun", "Caelestrasz", "Cairne", "Cenarion Circle", "Cenarius", "Chants éternels", "Cho'gall", "Chromaggus", "Coilfang", "Confrérie du Thorium", "Conseil des Ombres", "Crushridge", "Culte de la Rive Noire", "Daggerspine", "Dalaran", "Dalvengyr", "Dark Iron", "Darkmoon Faire", "Darksorrow", "Darkspear", "Darrowmere", "Das Konsortium", "Das Syndikat", "Dath'Remar", "Deathwing", "Defias Brotherhood", "Demon Soul", "Dentarg", "Der Mithrilorden", "Der Rat von Dalaran", "Der abyssische Rat", "Destromath", "Dethecus", "Detheroc", "Die Aldor", "Die Arguswacht", "Die Silberne Hand", "Die Todeskrallen", "Die ewige Wacht", "Doomhammer", "Draenor", "Dragonblight", "Dragonmaw", "Drak'thul", "Draka", "Dreadmaul", "Drek'Thar", "Drenden", "Dun Modr", "Dun Morogh", "Dunemaul", "Durotan", "Duskwood", "Earthen Ring", "Echo Isles", "Echsenkessel", "Eitrigg", "El Exodar", "Eldre'Thalas", "Elune", "Emerald Dream", "Emeriss", "Eonar", "Eredar", "Executus", "Exodar", "Farstriders", "Feathermoon", "Fenris", "Festung der St\303\274rme", "Firetree", "Forscherliga", "Frostmane", "Frostmourne", "Frostwhisper", "Frostwolf", "Garithos", "Garona", "Genjuros", "Ghostlands", "Gilneas", "Gnomeregan", "Gorefiend", "Gorgonnash", "Greymane", "Grim Batol", "Gul'dan", "Gurubashi", "Hakkar", "Haomarush", "Hellfire", "Hellscream", "Hydraxis", "Hyjal", "Icecrown", "Illidan", "Jaedenar", "Jubei'Thos", "Kael'Thas", "Kael'thas", "Kalecgos", "Karazhan", "Kargath", "Kazzak", "Kel'Thuzad", "Khadgar", "Khaz Modan", "Khaz'goroth", "Kil'Jaeden", "Kilrogg", "Kirin Tor", "Kor'gall", "Korgath", "Korialstrasz", "Krag'jin", "Krasus", "Kul Tiras", "Kult der Verdammten", "La Croisade écarlate", "Laughing Skull", "Les Clairvoyants", "Les Sentinelles", "Lethon", "Lightbringer", "Lightning's Blade", "Lightninghoof", "Llane", "Lordaeron", "Los Errantes", "Lothar", "Madmortem", "Madoran", "Maelstrom", "Magtheridon", "Maiev", "Mal'Ganis", "Malfurion", "Malorne", "Malygos", "Mannoroth", "Marécage de Zangar", "Mazrigos", "Medivh", "Minahonda", "Misha", "Molten Core", "Moon Guard", "Moonglade", "Moonrunner", "Mug'thol", "Muradin", "Nagrand", "Nathrezim", "Naxxramas", "Nazgrel", "Nazjatar", "Nefarian", "Neptulon", "Ner'zhul", "Nera'thor", "Nethersturm", "Nordrassil", "Norgannon", "Nozdormu", "Onyxia", "Outland", "Perenolde", "Proudmoore", "Quel'Dorei", "Quel'Thalas", "Ragnaros", "Rajaxx", "Rashgarroth", "Ravencrest", "Ravenholdt", "Rexxar", "Rivendare", "Runetotem", "Sargeras", "Scarlet Crusade", "Scarshield Legion", "Scilla", "Sen'Jin", "Sen'jin", "Sentinels", "Shadow Council", "Shadowmoon", "Shadowsong", "Shandris", "Shattered Halls", "Shattered Hand", "Shattrath", "Shen'dralar", "Shu'Halo", "Silver Hand", "Silvermoon", "Sinstralis", "Sisters of Elune", "Skullcrusher", "Skywall", "Smolderthorn", "Spinebreaker", "Spirestone", "Sporeggar", "Staghelm", "Steamwheedle Cartel", "Stonemaul", "Stormrage", "Stormreaver", "Stormscale", "Sunstrider", "Suramar", "Sylvanas", "Taerar", "Talnivarr", "Tanaris", "Tarren Mill", "Teldrassil", "Temple noir", "Terenas", "Terokkar", "Terrordar", "Thaurissan", "The Forgotten Coast", "The Maelstrom", "The Scryers", "The Sha'tar", "The Underbog", "The Venture Co", "The Venture Co.", "Theradras", "Thorium Brotherhood", "Thrall", "Throk'Feroth", "Thunderhorn", "Thunderlord", "Tichondrius", "Tirion", "Tortheldrin", "Trollbane", "Turalyon", "Twilight's Hammer", "Twisting Nether", "Tyrande", "Uldaman", "Uldum", "Un'Goro", "Undermine", "Ursin", "Uther", "Varimathras", "Vashj", "Vek'lor", "Vek'nilash", "Velen", "Vol'jin", "Warsong", "Whisperwind", "Wildhammer", "Windrunner", "Wrathbringer", "Xavius", "Ysera", "Ysondre", "Zangarmarsh", "Zenedar", "Zirkel des Cenarius", "Zul'jin", "Zuluhed"]
 
@@ -147,6 +134,10 @@ class Character
     self.class.to_s.downcase.to_sym
   end
   
+  def to_s
+    self.class.to_s
+  end
+  
   def check_gear
     # checks characters items for arena or raid gear
     
@@ -226,6 +217,10 @@ class Character
     return char
   end
   
+  def untalented?
+    talents.map { |tree| tree[:points] }.max == 0
+  end
+  
   def spec
     sorted = self.talents.sort_by {|tree| tree[:points]}.reverse
     
@@ -234,6 +229,10 @@ class Character
 end
 
 class Druid<Character
+  def trees
+    [:balance, :feral, :restoration]
+  end
+  
   def schools
     [:nature, :arcane]
   end
@@ -252,9 +251,16 @@ class Druid<Character
 end
 
 class Hunter<Character
+  def trees
+    [:"beast mastery", :marksmanship, :survival]
+  end
 end
 
 class Mage<Character
+  def trees
+    [:arcane, :fire, :frost]
+  end
+  
   def schools
     [:frost, :arcane, :fire]
   end
@@ -265,6 +271,10 @@ class Mage<Character
 end
 
 class Paladin<Character
+  def trees
+    [:holy, :protection, :retribution]
+  end
+  
   def schools
     [:holy]
   end
@@ -283,6 +293,10 @@ class Paladin<Character
 end
 
 class Priest<Character
+  def trees
+    [:discipline, :holy, :shadow]
+  end
+  
   def schools
     [:holy, :shadow]
   end
@@ -297,9 +311,16 @@ class Priest<Character
 end
 
 class Rogue<Character
+  def trees
+    [:assasination, :combat, :subtlety]
+  end
 end
 
 class Shaman<Character
+  def trees
+    [:elemental, :enhancement, :restoration]
+  end
+  
   def schools
     [:nature]
   end
@@ -314,9 +335,20 @@ class Shaman<Character
 end
 
 class DeathKnight<Character
+  def to_s
+    "Death Knight"
+  end
+  
+  def trees
+    [:blood, :frost, :unholy]
+  end
 end
 
 class Warlock<Character
+  def trees
+    [:affliction, :demonology, :destruction]
+  end
+  
   def schools
     [:fire, :shadow]
   end
@@ -327,6 +359,10 @@ class Warlock<Character
 end
 
 class Warrior<Character
+  def trees
+    [:arms, :fury, :protection]
+  end
+  
   def tank?
     true if spec == :protection
   end
@@ -336,6 +372,10 @@ class NoCharacterError < StandardError
 end
 
 class BelowMinLevelError < StandardError
+end
+
+def Armory(region)
+  Armory.new(region)
 end
 
 class Armory
@@ -439,8 +479,7 @@ class Armory
         talents = (tab_xml/:talentSpec).first.attributes
         talents = [talents["treeOne"], talents["treeTwo"], talents["treeThree"]]
         
-        trees = TALENT_TREES[char.to_sym]
-        trees.each_with_index do |tree,i|
+        char.trees.each_with_index do |tree,i|
           char.talents << {:tree => tree, :points => talents[i].to_i}
         end
         
@@ -448,7 +487,7 @@ class Armory
         pvp = (tab_xml/:pvp)
         
         char.pvp = {:lifetime_kills => (pvp/:lifetimehonorablekills).first.attributes["value"].to_i,
-                      :arena_points   => (pvp/:arenacurrency).first.attributes["value"].to_i}
+                    :arena_points   => (pvp/:arenacurrency).first.attributes["value"].to_i}
 
         # professions
         prof = (tab_xml/:professions/:skill)
