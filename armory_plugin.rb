@@ -83,7 +83,10 @@ class ArmoryPlugin < Plugin
   end
   
   def get_realm(m, params)
+    pp params
     if !params[:realm].empty?
+      pp params[:realm].to_s
+      pp Util::levenshtein_realm(params[:realm].to_s)
       Util::levenshtein_realm(params[:realm].to_s)
     elsif m.source.get_botdata[:armory]
       m.source.get_botdata[:armory][:realm]

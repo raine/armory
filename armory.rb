@@ -1,6 +1,6 @@
 require "net/http"
 require "rubygems"
-require "levenshtein"
+#require "levenshtein"
 require "hpricot"
 require "shorturl"
 require "date"
@@ -793,7 +793,9 @@ end
 
 module Util
   def self.levenshtein_realm(realm)
+    p "asd"
     return realm if REALMS.map {|r| r.downcase}.include?(realm)
+    p "asd"
 
     shortest = -1
     closest  = ""
