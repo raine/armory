@@ -56,7 +56,7 @@ class ArmoryPlugin < Plugin
   
   def help(plugin, topic="")
     url = "http://guaxia.org/jakubot/#"
-    keywords = ["2vs2 etc", "talents", "professions", "realm"]
+    keywords = ["2vs2 etc", "talents", "professions", "realm", "online"]
     
     case topic
     when 'commands'
@@ -726,7 +726,7 @@ end
 
 REGEX_REGION   = %r{eu|us}i
 REGEX_CHARNAME = %r{^[^-\d\s]+$}
-REGEX_REALM    = %r{([a-z]+[-a-z']+\s*)+}i
+REGEX_REALM    = %r{([\w]+[-\w']+\s*)+}iu
 
 plugin = ArmoryPlugin.new
 

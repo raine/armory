@@ -1,6 +1,6 @@
 require "net/http"
 require "rubygems"
-#require "levenshtein"
+require "levenshtein"
 require "hpricot"
 require "shorturl"
 require "date"
