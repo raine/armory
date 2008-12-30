@@ -624,7 +624,7 @@ class Armory
         
           members_xml = (team/:members/:character)
           members_xml.each do |member|
-            member_char = Object.const_get(member.attributes["class"])::parse_hash(member.attributes)
+            member_char = Object.const_get(member.attributes["class"].tr(' ',''))::parse_hash(member.attributes)
             member_char.realm  = char.realm
             member_char.region = char.region
             
@@ -793,9 +793,7 @@ end
 
 module Util
   def self.levenshtein_realm(realm)
-    p "asd"
     return realm if REALMS.map {|r| r.downcase}.include?(realm)
-    p "asd"
 
     shortest = -1
     closest  = ""
