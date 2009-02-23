@@ -1,6 +1,6 @@
 require "net/http"
 require "rubygems"
-#require "levenshtein"
+require "levenshtein"
 require "hpricot"
 require "shorturl"
 require "date"
@@ -863,6 +863,3 @@ module ArenaRating
     teams
   end
 end
-
-a = Armory.new(:eu)
-a.character("faylayen", "nordrassil")
