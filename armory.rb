@@ -1,6 +1,6 @@
 require "net/http"
 require "rubygems"
-require "levenshtein"
+#require "levenshtein"
 require "hpricot"
 require "shorturl"
 require "date"
@@ -407,6 +407,7 @@ class Armory
   def http_get(path)
     res = @armory_http.get(path, HEADERS)
     
+    pp res.body
     raise "armory fails" unless res.code_type == Net::HTTPOK
     
     return res.body
@@ -466,7 +467,7 @@ class Armory
         char.gender      = char_hash["gender"].downcase.to_sym
         char.realm       = char_hash["realm"]
         char.battlegroup = char_hash["battleGroup"]
-        char.last_online = Date.parse(char_hash["lastModified"])
+        char.last_online = Date.parse(char_hash["lastModified"]) unless char_hash["lastModified"].nil?
         
         char.title = {:prefix => char_hash["prefix"],
                       :suffix => char_hash["suffix"]}
@@ -862,3 +863,6 @@ module ArenaRating
     teams
   end
 end
+
+a = Armory.new(:eu)
+a.character("faylayen", "nordrassil")
