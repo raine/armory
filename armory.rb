@@ -409,7 +409,7 @@ class Armory
   
   def http_get(path)
     res = @armory_http.get(path, HEADERS)
-    raise "armory fails" unless res.code_type == Net::HTTPOK
+    raise CharacterDataUnavailable unless res.code_type == Net::HTTPOK
     return res.body
   end
   
