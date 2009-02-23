@@ -145,7 +145,7 @@ class ArmoryPlugin < Plugin
         m.reply "connection refused", true
         return
       rescue CharacterDataUnavailable
-        m.reply "error: armory sucks balls, sry", true
+        m.reply "error: armory sucks monkey balls, sry", true
         return
       end
 
