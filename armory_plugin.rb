@@ -13,6 +13,14 @@ class ::Irc::UserMessage
   end
 end
 
+class ::Irc::UserMessage
+  def plainreply(string, options={})
+    @bot.say @replyto, string, options
+    @replied = true
+  #  reply string, {:nick => false}.merge(options)
+  end
+end
+
 class ::Irc::Bot
   def help(topic=nil)
     topic = nil if topic == ""
@@ -38,7 +46,7 @@ class ArmoryPlugin < Plugin
   Config.register Config::StringValue.new('armory.region',
     :default => "eu",
     :desc => "Default region")
-  
+
   Config.register Config::StringValue.new('armory.realm',
     :desc => "Default realm")
 
@@ -48,16 +56,16 @@ class ArmoryPlugin < Plugin
 
   def initialize
     super
-    
+
     @temp = {}
-    
+
     @cache = CharacterCache.new
   end
-  
+
   def help(plugin, topic="")
     url = "http://guaxia.org/jakubot/#"
     keywords = ["2vs2 etc", "talents", "professions", "realm", "online"]
-    
+
     case topic
     when 'commands'
       "Commands: c(haracter), s(earch), last, l(ucky), me, iam, show | 'help armory <command>' for more info on specific command"
@@ -81,7 +89,7 @@ class ArmoryPlugin < Plugin
       "Armory plugin -- Commands: c(haracter), s(earch), last, l(ucky), q(uick), me (alias:my), iam, show | 'help armory <command>' for more info on specific command or see http://guaxia.org/jakubot/ for more elaborate help"
     end
   end
-  
+
   def get_realm(m, params)
     if !params[:realm].empty?
       Util::levenshtein_realm(params[:realm].to_s)
@@ -91,7 +99,7 @@ class ArmoryPlugin < Plugin
       @bot.config['armory.realm']
     end
   end
-  
+
   def get_region(m, params)
     if params[:region]
       params[:region].downcase.to_sym
@@ -102,26 +110,26 @@ class ArmoryPlugin < Plugin
     end
   end
 
-  def character_action(m, params)    
+  def character_action(m, params)
     realm  = get_realm(m, params)
     region = get_region(m, params)
-    
+
     unless realm
       m.reply "specify realm", true
       return
     end
-    
+
     unless region
       m.reply "specify region", true
       return
     end
-    
+
     m.reply character(params[:name], realm, region, m, params), true
   end
-  
+
   def character(name, realm, region, m, params=nil, options=nil)
     # check cache and stuff
-    
+
     if @bot.config['armory.cache'] && cached = @cache.find_character(name, realm, region)
       char = cached
     else
@@ -136,28 +144,25 @@ class ArmoryPlugin < Plugin
       rescue Errno::ECONNREFUSED
         m.reply "connection refused", true
         return
-      rescue => e
-        m.reply "error: #{e.message}", true
-        return
       end
-      
+
       @cache.save_character(char)
     end
-    
+
     source = m.replyto.to_s
-    
+
     @temp[source] = Hash.new unless @temp[source]
     @temp[source][:last] = char
-    
+
     if params and !params[:keywords].empty?
       keyword = parse_keywords(params[:keywords].to_s)
 
       case keyword
       when :"2vs2", :"3vs3", :"5vs5"
         bracket = keyword.to_s.split(//).first.to_i
-    
+
         if char.arena_teams[bracket]
-          @temp[source][:arena_team] = char.arena_teams[bracket].members            
+          @temp[source][:arena_team] = char.arena_teams[bracket].members
           return output(char.arena_teams[bracket])
         else
           return "character doesn't have a team in that bracket"
@@ -169,11 +174,11 @@ class ArmoryPlugin < Plugin
       return output(char, nil, options)
     end
   end
-  
+
   def parse_keywords(keywords)
     keywords.gsub!(/-/,"")
-    
-    case keywords  
+
+    case keywords
     when /(2(?:on|v|vs)2|3(?:on|v|vs)3|5(?:on|v|vs)5)/i
       # 2[on|vs/v]2 etc.
       return $1.gsub(/(\d).*?\d/) { |match| $1+'vs'+$1 }.to_sym
@@ -194,33 +199,32 @@ class ArmoryPlugin < Plugin
       return :online
     end
   end
-  
+
   def last(m, params)
     source = m.replyto.to_s
-    
+
     return unless @temp[source][:last]
-    
+
     char = @temp[source][:last]
-    
+
     m.reply character(char.name, char.realm, char.region, m, params), true
   end
-  
+
   def search_action(m, params)
     region = get_region(m, params)
-    
     result = search(region, params, m)
-            
+
     if result.empty?
       m.reply "no results", true
       return
     end
-    
+
     # save result
     source = m.replyto.to_s
-    
+
     @temp[source] = Hash.new if @temp[m.replyto.to_s].nil?
     @temp[source][:search] = result
-    
+
     res = []
     result[0..4].each_with_index do |char, i|
       str = String.new
@@ -240,13 +244,13 @@ class ArmoryPlugin < Plugin
       str << _(" (%{realm})") % {
         :realm => char.realm
       }
-      
+
       res << str
     end
-    
+
     m.reply "<#{result.size}> "+res.join(", "), true
   end
-  
+
   def search(region, params, m)
     begin
       # initial result
@@ -261,13 +265,13 @@ class ArmoryPlugin < Plugin
       m.reply "error: #{e.message}", true
       return
     end
-    
+
     # check for additional keywords like race or class
     unless params[:keywords].empty?
       str = params[:keywords].to_s
-      
+
       keywords = {}
-      
+
       # parse keywords
       keywords[:race]        = $1 if str =~ /(#{RACES.join("|")})/i
       keywords[:class]       = $1 if str =~ /(#{CLASSES.join("|")})/i
@@ -275,67 +279,67 @@ class ArmoryPlugin < Plugin
       keywords[:level]       = $1 if str =~ /(\d{2})/
       keywords[:battlegroup] = $1 if str =~ /(#{BATTLEGROUPS.join("|")})/i
       keywords[:gender]      = $1 if str =~ /(male|female)/i
-      
+
       # death knight -> deathknight
       keywords[:class].gsub!(/\s/, "") if keywords[:class]
-      
+
       # remove entries that don't match the given keywords
       keywords.each do |keyword, value|
         result.delete_if { |c| c.send(keyword.to_s).to_s.downcase != value.downcase }
       end
     end
-    
+
     return result
   end
-  
+
   # search similar to "I'm feeling lucky" in google
   def lucky(m, params)
     region = get_region(m, params)
     result = search(region, params, m)
-    
+
     if result.empty?
       m.reply "out of luck!", true
       return
     end
-    
+
     first = result.first
-    
+
     m.reply character(first.name, first.realm, first.region, m, {:keywords => params[:keywords2]}, {:show_realm => true}), true
   end
-  
+
   def quick(m, params)
     params[:keywords]<<70.to_s
     region = get_region(m, params)
     result = search(region, params, m)
-    
+
     if result.empty?
       m.reply "no results"
       return
     end
 
     first = result.first
-    
+
     cached = @cache.find_character(first.name, first.realm, first.region)
-    
+
     char = if cached
       cached
     else
       Armory.new(first.region).character(first.name, first.realm)
     end
-    
+
     @cache.save_character(char)
-    
+
     bracket = params[:bracket].to_i
-    
+
     source = m.replyto.to_s
     @temp[source] = Hash.new unless @temp[source]
-    
+
     if char.arena_teams[bracket]
       team = char.arena_teams[bracket]
-      
+
       @temp[source][:arena_team] = team.members
       m.reply output(team)
-      
+
       team.members.each do |member|
         m.reply character(member.name, member.realm, member.region, m)
       end
@@ -347,16 +351,16 @@ class ArmoryPlugin < Plugin
   def message(m)
     return unless m.message =~ /^(!|%)(\d+)(.*?)$/
     source = m.replyto.to_s
-    
+
     temp_id = $2.to_i
-    
+
     params = {:keywords => $3}
-    
+
     case $1
     when /!/ # search prefix
       return unless @temp[source][:search]
       searched_char = @temp[source][:search][temp_id-1]
-      
+
       if searched_char
         m.reply character(searched_char.name,
                           searched_char.realm,
@@ -364,9 +368,9 @@ class ArmoryPlugin < Plugin
       end
     when /%/ # arena team member prefix
       return unless @temp[source][:arena_team]
-      
+
       team_member = @temp[source][:arena_team][temp_id-1]
-      
+
       if team_member
         m.reply character(team_member.name,
                           team_member.realm,
@@ -374,15 +378,15 @@ class ArmoryPlugin < Plugin
       end
     end
   end
-  
+
   def output(obj, what=nil, options=nil)
     str = String.new
-    
+
     case obj
-      when ArenaTeam  
+      when ArenaTeam
         team = obj
 
-        # team info        
+        # team info
         str << "[#{team.type}on#{team.type}] "
         str << _("%{name}") % {:name => Bold+team.name+Bold}
         str << " | "
@@ -404,11 +408,11 @@ class ArmoryPlugin < Plugin
           :total_season => team.games[:season][:total],
           :total_week   => team.games[:week][:total],
         }
-        
+
         # members
         unless team.members.empty?
           str << " | Members: "
-          
+
           members = Array.new
           team.members.each_with_index do |m, i|
             member_str = String.new
@@ -418,7 +422,7 @@ class ArmoryPlugin < Plugin
               :class => m.to_s,
               :name  => m.name
             }
-            
+
             member_str << _(" (%{won}/%{lost})") % {
               :won   => colorize(m.arena_games_won, :lime_green),
               :lost  => colorize(m.arena_games_lost, :red),
@@ -426,12 +430,12 @@ class ArmoryPlugin < Plugin
             }
             members << member_str
           end
-          
+
           str << members.join(", ")
         end
       when Character
         char = obj
-        
+
         if what
           case what
             when :talents
@@ -469,13 +473,13 @@ class ArmoryPlugin < Plugin
           str << char.title[:prefix]+char.name+char.title[:suffix]
           str << ' <'+char.guild+'>' unless char.guild.nil? || char.guild.empty?
           str << ' ('+char.realm+'-'+char.region.to_s.upcase+')' if options && options[:show_realm]
-        
+
           str << _(", %{level} %{race} %{class}") % {
             :level => char.level,
             :race  => char.race.to_s.cew,
             :class => char.to_s
           }
-          
+
           if char.untalented?
             str < " (Untalented)"
           else
@@ -490,34 +494,34 @@ class ArmoryPlugin < Plugin
           str << _(" | H: %{health}") % {
             :health => char.stats[:health]
           }
-        
+
           str << _(" M: %{mana}") % {
             :mana => char.stats[:mana]
           } if char.stats[:mana]
-        
+
           str << _(" Resilience: %{resi} (-%{hit}%)") % {
             :resi => char.defenses[:resilience][:value],
             :hit => char.defenses[:resilience][:hit_percent]
           } if char.defenses[:resilience][:value] > 0
-        
+
           str << " |"
-        
+
           # class and spec specific attributes
-        
+
           if char.caster?
             if char.healer?
               str << _(" +Healing: %{healing}") % {
                 :healing => char.spell[:healing]
               }
-            
+
               str << _(" +mp5: %{mp5}") % {
                 :mp5 => char.spell[:mp5]
-              }            
+              }
             elsif char.caster?
               if char.spell[:damage].values.uniq.size > 1
                 # spell schools relevant to the class have different damage bonuses
                 # so they are shown individually
-                
+
                 char.spell[:damage].each do |s,d|
                   str << _(" +%{school}: %{damage}") % {
                     :school => s.to_s.capitalize,
@@ -529,23 +533,23 @@ class ArmoryPlugin < Plugin
                   :damage => char.spell[:damage].values.first
                 }
               end
-              
+
               # show healing as well for balance druids
               if char.class == Druid
                 str << _(" +Healing: %{healing}") % {
                   :healing => char.spell[:healing]
                 }
-              end              
+              end
             end
-          
+
             str << " |"
-          
+
             # spell hit
             str << _(" Hit: %{hit} (%{percent}%)") % {
               :hit     => char.spell[:hit_rating][:value],
               :percent => char.spell[:hit_rating][:inc_percent]
             } if char.spell[:hit_rating][:value] > 0
-          
+
             # spell crit
             str << _(" Crit: %{crit}%") % {
               :crit => char.spell[:crit][:schools].values.first
@@ -555,24 +559,24 @@ class ArmoryPlugin < Plugin
             str << _(" RAP: %{rap}") % {
               :rap => char.ranged[:attack_power][:effective]
             }
-            str << " |"        
+            str << " |"
             str << _(" RCrit: %{percent}%") % {
               :percent => char.ranged[:crit][:percent]
-            }          
+            }
             str << _(" RHit: %{hit} (+%{percent}%)") % {
               :hit     => char.ranged[:hit_rating][:value],
               :percent => char.ranged[:hit_rating][:inc_percent],
             } if char.ranged[:hit_rating][:value] > 0
-          
+
           # tanks
           elsif char.tank?
             str << _(" Defense: %{defense}") % {
               :defense => (char.defenses[:defense][:value]+char.defenses[:defense][:plus_def]).to_i
-            }          
+            }
             str << _(" Dodge: %{percent}%") % {
               :percent => char.defenses[:dodge][:percent]
             }
-          
+
             if char.class == Warrior or char.class == Paladin
               str << _(" Armor: %{armor} (-%{percent}%)") % {
                 :armor   => char.defenses[:armor][:effective],
@@ -592,28 +596,28 @@ class ArmoryPlugin < Plugin
             str << " |"
             str << _(" Crit: %{percent}%") % {
               :percent => char.melee[:crit][:percent]
-            }          
+            }
             str << _(" Hit: %{hit} (+%{percent}%)") % {
               :hit     => char.melee[:hit_rating][:value],
               :percent => char.melee[:hit_rating][:inc_percent],
             } if char.melee[:hit_rating][:value] > 0
           end
-          
+
           str << _(" Haste: %{rating} (+%{percent}%)") % {
             :rating  => char.haste[:rating],
             :percent => char.haste[:percent],
           } if char.haste[:rating] > 0
-        
+
           # special gear
-        
+
           unless char.gear.values.map { |e| e.values }.flatten.max.zero?
             str << " | "
-          
+
             gear = []
             prefixes = {:pve => "T", :arena => "S"}
             pieces   = {:pve   => {4=>5,5=>5,6=>8},
                         :arena => {1=>5,2=>5,3=>5, 4=>5}}
-          
+
             char.gear.keys.each do |type|
               char.gear[type].each do |tier, amount|
                 gear << _("%{prefix}%{tier}: %{amount}/%{max}") % {
@@ -624,18 +628,18 @@ class ArmoryPlugin < Plugin
                 } unless amount.zero?
               end
             end
-          
-          
+
+
             str << gear.join(", ")
           end
-        
+
           # PVP
           # arena teams
-          
+
           pvp_substr = ""
-          
+
           unless char.arena_teams.empty?
-          
+
             teams = [2, 3, 5].map do |s|
               if char.arena_teams[s]
                 char.arena_teams[s].rating
@@ -643,49 +647,49 @@ class ArmoryPlugin < Plugin
                 "-"
               end
             end.join("/")
-          
+
             pvp_substr << _(" Arena: %{teams}") % {
               :teams => teams
             }
-          
+
           end
-        
+
           pvp_substr << _(" Points: %{ap}") % {
             :ap => char.pvp[:arena_points]
           } if char.pvp[:arena_points] > 0
-        
+
           pvp_substr << _(" LHKs: %{lhk}") % {
             :lhk => char.pvp[:lifetime_kills]
           } if char.pvp[:lifetime_kills] > 0
-          
+
           str << " |" + pvp_substr unless pvp_substr.empty?
-          
+
           # armory url
           str << _(" | %{url}") % {
             :url => char.url
           }
-          
+
         end
     end
     return str
   end
-  
+
   def set_own_character(m, params)
     realm  = get_realm(m, params)
     region = get_region(m, params)
-    
+
     name = params[:name]
-    
+
     m.source.set_botdata('armory.name',   name)
     m.source.set_botdata('armory.realm',  realm)
     m.source.set_botdata('armory.region', region)
-    
+
     m.notify "You are now #{name.capitalize} of the #{realm.cew} (#{region.to_s.upcase})"+
              " | From now on when using the bot, you don't have to enter"+
              " region and/or realm when looking for things on your character's realm,"+
              " for example, you could just do ',c #{name.downcase}'."
   end
-  
+
   def get_own_character(m, params)
     if m.source.get_botdata[:armory]
       char = m.source.get_botdata[:armory]
@@ -694,7 +698,7 @@ class ArmoryPlugin < Plugin
       m.notify "You don't have a character set, this can be corrected with ´#{@bot.config[:"core.address_prefix"]}iam <region (eu|us)> <name> <realm>´ for help"
     end
   end
-  
+
   def get_user_character(m, params)
     if m.server.get_user(params[:nick]).get_botdata[:armory]
       char = m.server.get_user(params[:nick]).get_botdata[:armory]
@@ -703,10 +707,10 @@ class ArmoryPlugin < Plugin
       m.reply "#{params[:nick]} doesn't have a character set", true
     end
   end
-  
+
   def toggle_silent(m, params)
     return unless m.channel && m.channel.has_op?(m.source.downcase) || m.source.botuser.owner?
-    
+
     if @registry[m.channel.downcase]
       @registry[m.channel.downcase] = false
       m.reply "silent mode disabled"
@@ -734,7 +738,7 @@ plugin.map "c [:region] :name [*realm] [*keywords]",
 plugin.map "last [*keywords]",
   :action => 'last'
 plugin.map "l [:region] :name [*keywords] [*keywords2]",
-  :action => 'lucky', :requirements => {:name => REGEX_CHARNAME, :region => REGEX_REGION, :keywords2 => %r{^-\w+$}}          
+  :action => 'lucky', :requirements => {:name => REGEX_CHARNAME, :region => REGEX_REGION, :keywords2 => %r{^-\w+$}}
 plugin.map "q [:region] :name :bracket [*keywords]",
   :action => 'quick', :requirements => {:name => REGEX_CHARNAME, :region => REGEX_REGION, :bracket => %r{2|3|5}}
 plugin.map "me [*keywords]",
