@@ -474,7 +474,7 @@ class Armory
         
         tab_xml = (xml/:characterInfo/:characterTab)
         
-        raise CharacterDataUnvailable if tab_xml.empty?
+        raise CharacterDataUnavailable if tab_xml.empty?
         
         # talents
         talents = (tab_xml/:talentSpec).first.attributes
