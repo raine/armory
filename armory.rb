@@ -374,6 +374,9 @@ end
 class BelowMinLevelError < StandardError
 end
 
+class CharacterDataUnavailable < StandardError
+end
+
 def Armory(region)
   Armory.new(region)
 end
@@ -406,10 +409,7 @@ class Armory
   
   def http_get(path)
     res = @armory_http.get(path, HEADERS)
-    
-    pp res.body
     raise "armory fails" unless res.code_type == Net::HTTPOK
-    
     return res.body
   end
   
@@ -474,7 +474,7 @@ class Armory
         
         tab_xml = (xml/:characterInfo/:characterTab)
         
-        raise "character data unavailable" if tab_xml.empty?
+        raise CharacterDataUnvailable if tab_xml.empty?
         
         # talents
         talents = (tab_xml/:talentSpec).first.attributes

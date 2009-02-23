@@ -144,6 +144,9 @@ class ArmoryPlugin < Plugin
       rescue Errno::ECONNREFUSED
         m.reply "connection refused", true
         return
+      rescue CharacterDataUnavailable
+        m.reply "error: armory sucks balls, sry", true
+        return
       end
 
       @cache.save_character(char)
